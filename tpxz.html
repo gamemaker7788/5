@@ -31,26 +31,6 @@
             margin-top: 40px;
             display: flex;
             gap: 30px;
-            position: relative;
-        }
-        
-        /* 侧边栏抽屉样式 */
-        .sidebar-toggle {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         
         .sidebar {
@@ -60,27 +40,6 @@
             padding: 20px;
             overflow-y: auto;
             max-height: 80vh;
-            transition: all 0.3s ease;
-            position: relative;
-            border: 1px solid #ddd;
-        }
-        
-        .sidebar.collapsed {
-            width: 0;
-            padding: 0;
-            overflow: hidden;
-            border: none;
-        }
-        
-        .sidebar-resize-handle {
-            position: absolute;
-            top: 0;
-            right: -5px;
-            width: 10px;
-            height: 100%;
-            cursor: col-resize;
-            background: transparent;
-            z-index: 10;
         }
         
         .sidebar-header {
@@ -145,7 +104,6 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            transition: margin-left 0.3s ease;
         }
         
         .editor-area {
@@ -440,9 +398,9 @@
         }
         
         .modal-btn-primary {
-            color: white;
-            background-color: #C00;
-            border: 2px solid #999;
+	color: white;
+	background-color: #C00;
+	border: 2px solid #999;
         }
         
         .modal-btn-secondary {
@@ -458,11 +416,6 @@
             .sidebar {
                 width: 100%;
                 max-height: 200px;
-            }
-            
-            .sidebar.collapsed {
-                width: 0;
-                height: 0;
             }
         }
         
@@ -502,22 +455,13 @@
             .action-buttons {
                 flex-direction: column;
             }
-            
-            .sidebar-toggle {
-                top: 10px;
-                left: 10px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 侧边栏切换按钮 -->
-        <button class="sidebar-toggle" id="sidebarToggle">☰</button>
-        
         <!-- 侧边栏 -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-resize-handle" id="resizeHandle"></div>
+        <div class="sidebar">
             <div class="sidebar-header">
                 <h2>已保存的卡片</h2>
                 <button class="refresh-btn" id="refreshBtn">↻</button>
@@ -531,43 +475,43 @@
         <div class="main-content">
             <header>
                 <h1>卡片生成器</h1>
-            </header>
+</header>
             
             <div class="editor-area">
                 <div class="controls">
                     <div class="control-group">
                         <h3>卡片名称</h3>
-                        <input type="text" id="cardName" placeholder="为卡片命名" value="这是第一张">
+                      <input type="text" id="cardName" placeholder="为卡片命名" value="这是第一张">
                     </div>
                     
                     <div class="control-group">
                         <h3>航班信息</h3>
-                        <input type="text" id="flightNumber" placeholder="航班号" value="">
+                      <input type="text" id="flightNumber" placeholder="航班号" value="">
                     </div>
                     
                     <div class="control-group">
                         <h3>时间信息</h3>
-                        <input type="text" id="flightTime" placeholder="时间" value="">
-                        <input type="date" id="flightDate" value="">
+                      <input type="text" id="flightTime" placeholder="时间" value="">
+                      <input type="date" id="flightDate" value="">
                     </div>
                     
                     <div class="control-group">
                         <h3>贵宾信息</h3>
-                        <input type="text" id="guestName" placeholder="贵宾姓名" value="">
-                        <input type="text" id="destination" placeholder="目的地" value="">
+                      <input type="text" id="guestName" placeholder="贵宾姓名" value="">
+                      <input type="text" id="destination" placeholder="目的地" value="">
                     </div>
                     
                     <div class="control-group">
                         <h3>人物颜色</h3>
                         <div class="color-picker">
-                            <input type="color" id="guestColor" value="#000000">
-                        </div>
+                          <input type="color" id="guestColor" value="#000000">
+                      </div>
                     </div>
                     
                     <div class="control-group">
                         <h3>酒店信息</h3>
-                        <input type="text" id="hotelName" placeholder="酒店名称" value="">
-                        <input type="text" id="hotelLocation" placeholder="酒店地点" value="">
+                      <input type="text" id="hotelName" placeholder="酒店名称" value="">
+                      <input type="text" id="hotelLocation" placeholder="酒店地点" value="">
                     </div>
                 </div>
                 
@@ -623,11 +567,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 获取侧边栏相关元素
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const resizeHandle = document.getElementById('resizeHandle');
-            
             // 获取所有输入元素
             const cardName = document.getElementById('cardName');
             const flightNumber = document.getElementById('flightNumber');
@@ -670,42 +609,6 @@
             
             // 本地存储的卡片数据
             let cardsData = JSON.parse(localStorage.getItem('vip_cards')) || [];
-            
-            // 侧边栏状态
-            let isSidebarCollapsed = false;
-            let isResizing = false;
-            
-            // 侧边栏切换功能
-            sidebarToggle.addEventListener('click', function() {
-                isSidebarCollapsed = !isSidebarCollapsed;
-                sidebar.classList.toggle('collapsed', isSidebarCollapsed);
-                sidebarToggle.textContent = isSidebarCollapsed ? '☰' : '✕';
-            });
-            
-            // 侧边栏拖拽调整宽度功能
-            resizeHandle.addEventListener('mousedown', function(e) {
-                isResizing = true;
-                document.body.style.cursor = 'col-resize';
-                e.preventDefault();
-            });
-            
-            document.addEventListener('mousemove', function(e) {
-                if (!isResizing) return;
-                
-                const containerRect = document.querySelector('.container').getBoundingClientRect();
-                const newWidth = e.clientX - containerRect.left;
-                
-                if (newWidth > 150 && newWidth < 400) {
-                    sidebar.style.width = newWidth + 'px';
-                }
-            });
-            
-            document.addEventListener('mouseup', function() {
-                if (isResizing) {
-                    isResizing = false;
-                    document.body.style.cursor = '';
-                }
-            });
             
             // 显示通知
             function showNotification(message, isError = false) {
@@ -1063,4 +966,4 @@
         });
     </script>
 </body>
-</html>
+</html>把侧边栏弄成隐藏可拉伸出来的抽屉
