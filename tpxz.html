@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>卡片生成器</title>
+    <title>贵宾接待卡片生成器</title>
     <style>
         * {
             margin: 0;
@@ -398,9 +398,8 @@
         }
         
         .modal-btn-primary {
-	color: white;
-	background-color: #C00;
-	border: 2px solid #999;
+            background: #3498db;
+            color: white;
         }
         
         .modal-btn-secondary {
@@ -474,44 +473,46 @@
         <!-- 主内容区 -->
         <div class="main-content">
             <header>
-                <h1>卡片生成器</h1>
-</header>
+                <h1>贵宾接待卡片生成器</h1>
+                <p class="subtitle">创建并保存专业美观的贵宾接待卡片</p>
+            </header>
             
             <div class="editor-area">
                 <div class="controls">
                     <div class="control-group">
                         <h3>卡片名称</h3>
-                      <input type="text" id="cardName" placeholder="为卡片命名" value="这是第一张">
+                        <input type="text" id="cardName" placeholder="为卡片命名" value="我的贵宾接待卡片">
                     </div>
                     
                     <div class="control-group">
                         <h3>航班信息</h3>
-                      <input type="text" id="flightNumber" placeholder="航班号" value="">
+                        <input type="text" id="flightNumber" placeholder="航班号" value="cz6039">
                     </div>
                     
                     <div class="control-group">
                         <h3>时间信息</h3>
-                      <input type="text" id="flightTime" placeholder="时间" value="">
-                      <input type="date" id="flightDate" value="">
+                        <input type="text" id="flightTime" placeholder="时间" value="21:20">
+                        <input type="date" id="flightDate" value="2025-10-01">
                     </div>
                     
                     <div class="control-group">
                         <h3>贵宾信息</h3>
-                      <input type="text" id="guestName" placeholder="贵宾姓名" value="">
-                      <input type="text" id="destination" placeholder="目的地" value="">
+                        <input type="text" id="guestName" placeholder="贵宾姓名" value="王女士">
+                        <input type="text" id="destination" placeholder="目的地" value="格鲁吉亚">
                     </div>
                     
                     <div class="control-group">
                         <h3>人物颜色</h3>
                         <div class="color-picker">
-                          <input type="color" id="guestColor" value="#000000">
-                      </div>
+                            <span>颜色:</span>
+                            <input type="color" id="guestColor" value="#000000">
+                        </div>
                     </div>
                     
                     <div class="control-group">
                         <h3>酒店信息</h3>
-                      <input type="text" id="hotelName" placeholder="酒店名称" value="">
-                      <input type="text" id="hotelLocation" placeholder="酒店地点" value="">
+                        <input type="text" id="hotelName" placeholder="酒店名称" value="Tbilisi Chambers, Trademark Collection by Wyndham">
+                        <input type="text" id="hotelLocation" placeholder="酒店地点" value="第比利斯">
                     </div>
                 </div>
                 
@@ -549,15 +550,15 @@
     <div class="modal" id="deleteModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">删除卡片</h3>
+                <h3 class="modal-title">确认删除</h3>
                 <button class="close-modal" id="closeDeleteModal">×</button>
             </div>
             <div class="modal-body">
-                <p>您确定要删除这张卡片吗？真的很久~~~~</p>
+                <p>您确定要删除这张卡片吗？此操作无法撤销。</p>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn modal-btn-secondary" id="cancelDelete">谁说我要删除了？</button>
-                <button class="modal-btn modal-btn-primary" id="confirmDelete">我就要删除</button>
+                <button class="modal-btn modal-btn-secondary" id="cancelDelete">取消</button>
+                <button class="modal-btn modal-btn-primary" id="confirmDelete">确认删除</button>
             </div>
         </div>
     </div>
@@ -659,7 +660,7 @@
             // 生成卡片
             generateBtn.addEventListener('click', function() {
                 updatePreview();
-                showNotification('卡片现在是新的了！');
+                showNotification('贵宾接待卡片已更新！');
             });
             
             // 下载图片
@@ -758,7 +759,7 @@
                 link.click();
                 document.body.removeChild(link);
                 
-                showNotification('图片下载到图库了！');
+                showNotification('图片下载成功！');
             });
             
             // 加载保存的卡片
@@ -768,7 +769,7 @@
                     cardList.innerHTML = '';
                     
                     if (cardsData.length === 0) {
-                        cardList.innerHTML = '<li style="padding: 15px; text-align: center; color: #7f8c8d;">空空如也~~</li>';
+                        cardList.innerHTML = '<li style="padding: 15px; text-align: center; color: #7f8c8d;">暂无保存的卡片</li>';
                         return;
                     }
                     
@@ -783,7 +784,7 @@
                         }
                         
                         li.innerHTML = `
-                            <span>${card.card_name || '粗心得没名字'}</span>
+                            <span>${card.card_name || '未命名卡片'}</span>
                             <button class="delete-card" data-id="${card.id}">×</button>
                         `;
                         
@@ -834,7 +835,7 @@
                 hotelLocation.value = card.hotel_location || '';
                 
                 updatePreview();
-                showNotification(`加载了: ${card.card_name || '未命名卡片'}`);
+                showNotification(`已加载卡片: ${card.card_name || '未命名卡片'}`);
             }
             
             // 保存数据到本地存储
@@ -870,7 +871,7 @@
                     // 保存到本地存储
                     localStorage.setItem('vip_cards', JSON.stringify(cardsData));
                     
-                    showNotification('数据保存到数据库！');
+                    showNotification('数据已成功保存！');
                     
                     // 重新加载卡片列表
                     loadSavedCards();
@@ -902,7 +903,7 @@
                 });
                 
                 updatePreview();
-                showNotification('一个新卡片，开始填写信息吧');
+                showNotification('已创建新卡片，请填写信息');
             });
             
             // 刷新卡片列表
@@ -920,7 +921,7 @@
                     // 更新本地存储
                     localStorage.setItem('vip_cards', JSON.stringify(cardsData));
                     
-                    showNotification('卡片被删除');
+                    showNotification('卡片已成功删除');
                     
                     if (currentCardId === cardToDelete) {
                         currentCardId = null;
@@ -962,9 +963,8 @@
             
             // 初始化加载卡片列表
             loadSavedCards();
-            showNotification('又来了？欢迎，你知道怎么用吧');
+            showNotification('欢迎使用贵宾接待卡片生成器！');
         });
     </script>
 </body>
-
 </html>
