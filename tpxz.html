@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>贵宾接待卡片生成器</title>
+    <title>卡片生成器</title>
+    <!-- 引入Supabase客户端 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -62,6 +64,7 @@
             cursor: pointer;
             font-size: 1.2rem;
             color: #3498db;
+            margin-left: 10px;
         }
         
         .card-list {
@@ -257,7 +260,7 @@
             flex-wrap: wrap;
         }
         
-        .generate-btn, .download-btn, .save-btn, .new-card-btn {
+        .generate-btn, .download-btn, .save-btn {
             background: #3498db;
             color: white;
             border: none;
@@ -279,10 +282,6 @@
             background: #9b59b6;
         }
         
-        .new-card-btn {
-            background: #f39c12;
-        }
-        
         .generate-btn:hover {
             background: #2980b9;
         }
@@ -293,10 +292,6 @@
         
         .save-btn:hover {
             background: #8e44ad;
-        }
-        
-        .new-card-btn:hover {
-            background: #e67e22;
         }
         
         .ratio-info {
@@ -463,7 +458,10 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h2>已保存的卡片</h2>
-                <button class="refresh-btn" id="refreshBtn">↻</button>
+                <div>
+                    <button class="refresh-btn" id="newCardBtn" title="新建卡片">+</button>
+                    <button class="refresh-btn" id="refreshBtn" title="刷新列表">↻</button>
+                </div>
             </div>
             <ul class="card-list" id="cardList">
                 <!-- 卡片列表将通过JavaScript动态加载 -->
@@ -473,46 +471,44 @@
         <!-- 主内容区 -->
         <div class="main-content">
             <header>
-                <h1>贵宾接待卡片生成器</h1>
-                <p class="subtitle">创建并保存专业美观的贵宾接待卡片</p>
-            </header>
+                <h1>卡片生成器</h1>
+</header>
             
             <div class="editor-area">
                 <div class="controls">
                     <div class="control-group">
                         <h3>卡片名称</h3>
-                        <input type="text" id="cardName" placeholder="为卡片命名" value="我的贵宾接待卡片">
+                        <input type="text" id="cardName" placeholder="为卡片命名" value="我的卡片">
                     </div>
                     
                     <div class="control-group">
                         <h3>航班信息</h3>
-                        <input type="text" id="flightNumber" placeholder="航班号" value="cz6039">
+                        <input type="text" id="flightNumber" placeholder="航班号" value="">
                     </div>
                     
                     <div class="control-group">
                         <h3>时间信息</h3>
-                        <input type="text" id="flightTime" placeholder="时间" value="21:20">
-                        <input type="date" id="flightDate" value="2025-10-01">
+                        <input type="text" id="flightTime" placeholder="时间" value="">
+                        <input type="date" id="flightDate" value="">
                     </div>
                     
                     <div class="control-group">
                         <h3>贵宾信息</h3>
-                        <input type="text" id="guestName" placeholder="贵宾姓名" value="王女士">
-                        <input type="text" id="destination" placeholder="目的地" value="格鲁吉亚">
+                        <input type="text" id="guestName" placeholder="贵宾姓名" value="">
+                        <input type="text" id="destination" placeholder="目的地" value="">
                     </div>
                     
                     <div class="control-group">
                         <h3>人物颜色</h3>
                         <div class="color-picker">
-                            <span>颜色:</span>
-                            <input type="color" id="guestColor" value="#000000">
-                        </div>
+                          <input type="color" id="guestColor" value="#000000">
+                      </div>
                     </div>
                     
                     <div class="control-group">
                         <h3>酒店信息</h3>
-                        <input type="text" id="hotelName" placeholder="酒店名称" value="Tbilisi Chambers, Trademark Collection by Wyndham">
-                        <input type="text" id="hotelLocation" placeholder="酒店地点" value="第比利斯">
+                        <input type="text" id="hotelName" placeholder="酒店名称" value="">
+                        <input type="text" id="hotelLocation" placeholder="酒店地点" value="">
                     </div>
                 </div>
                 
@@ -536,9 +532,6 @@
                         </button>
                         <button class="save-btn" id="saveBtn">
                             <span>保存数据</span>
-                        </button>
-                        <button class="new-card-btn" id="newCardBtn">
-                            <span>新建卡片</span>
                         </button>
                     </div>
                 </div>
@@ -567,6 +560,11 @@
     <div id="notification" class="notification"></div>
 
     <script>
+        // 初始化Supabase客户端
+        const supabaseUrl = 'https://fezxhcmiefdbvqmhczut.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
         document.addEventListener('DOMContentLoaded', function() {
             // 获取所有输入元素
             const cardName = document.getElementById('cardName');
@@ -591,8 +589,8 @@
             const generateBtn = document.getElementById('generateBtn');
             const downloadBtn = document.getElementById('downloadBtn');
             const saveBtn = document.getElementById('saveBtn');
-            const newCardBtn = document.getElementById('newCardBtn');
             const refreshBtn = document.getElementById('refreshBtn');
+            const newCardBtn = document.getElementById('newCardBtn');
             const notification = document.getElementById('notification');
             
             // 获取模态框元素
@@ -607,9 +605,6 @@
             // 当前选中的卡片ID
             let currentCardId = null;
             let cardToDelete = null;
-            
-            // 本地存储的卡片数据
-            let cardsData = JSON.parse(localStorage.getItem('vip_cards')) || [];
             
             // 显示通知
             function showNotification(message, isError = false) {
@@ -763,25 +758,32 @@
             });
             
             // 加载保存的卡片
-            function loadSavedCards() {
+            async function loadSavedCards() {
                 try {
+                    const { data, error } = await supabase
+                        .from('vip_cards')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('加载卡片错误:', error);
+                        showNotification('加载卡片失败: ' + error.message, true);
+                        return;
+                    }
+                    
                     // 清空卡片列表
                     cardList.innerHTML = '';
                     
-                    if (cardsData.length === 0) {
+                    if (data.length === 0) {
                         cardList.innerHTML = '<li style="padding: 15px; text-align: center; color: #7f8c8d;">暂无保存的卡片</li>';
                         return;
                     }
                     
                     // 添加卡片到列表
-                    cardsData.forEach(card => {
+                    data.forEach(card => {
                         const li = document.createElement('li');
                         li.className = 'card-item';
                         li.dataset.id = card.id;
-                        
-                        if (card.id === currentCardId) {
-                            li.classList.add('active');
-                        }
                         
                         li.innerHTML = `
                             <span>${card.card_name || '未命名卡片'}</span>
@@ -838,132 +840,149 @@
                 showNotification(`已加载卡片: ${card.card_name || '未命名卡片'}`);
             }
             
-            // 保存数据到本地存储
-            saveBtn.addEventListener('click', function() {
+            // 新建卡片功能
+            newCardBtn.addEventListener('click', function() {
+                // 清空表单
+                cardName.value = '我的贵宾接待卡片';
+                flightNumber.value = 'cz6039';
+                flightTime.value = '21:20';
+                flightDate.value = '2025-10-01';
+                guestName.value = '王女士';
+                destination.value = '格鲁吉亚';
+                guestColor.value = '#000000';
+                hotelName.value = 'Tbilisi Chambers, Trademark Collection by Wyndham';
+                hotelLocation.value = '第比利斯';
+                
+                // 更新预览
+                updatePreview();
+                
+                // 清除当前选中的卡片
+                currentCardId = null;
+                document.querySelectorAll('.card-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                showNotification('已创建新卡片，可以开始编辑');
+            });
+            
+            // 保存数据到Supabase
+            saveBtn.addEventListener('click', async function() {
                 try {
                     // 收集表单数据
                     const cardData = {
-                        id: currentCardId || Date.now().toString(),
-                        card_name: cardName.value || `卡片-${new Date().toLocaleString()}`,
-                        flight_number: flightNumber.value || '',
-                        flight_time: flightTime.value || '',
-                        flight_date: flightDate.value || '',
-                        guest_name: guestName.value || '',
-                        destination: destination.value || '',
-                        guest_color: guestColor.value || '#000000',
-                        hotel_name: hotelName.value || '',
-                        hotel_location: hotelLocation.value || '',
-                        created_at: new Date().toISOString()
+                        card_name: cardName.value || '未命名卡片',
+                        flight_number: flightNumber.value,
+                        flight_time: flightTime.value,
+                        flight_date: flightDate.value,
+                        guest_name: guestName.value,
+                        destination: destination.value,
+                        guest_color: guestColor.value,
+                        hotel_name: hotelName.value,
+                        hotel_location: hotelLocation.value
                     };
+                    
+                    let result;
                     
                     if (currentCardId) {
                         // 更新现有卡片
-                        const index = cardsData.findIndex(card => card.id === currentCardId);
-                        if (index !== -1) {
-                            cardsData[index] = cardData;
-                        }
+                        const { data, error } = await supabase
+                            .from('vip_cards')
+                            .update(cardData)
+                            .eq('id', currentCardId)
+                            .select();
+                        
+                        result = { data, error };
                     } else {
                         // 插入新卡片
-                        cardsData.unshift(cardData);
-                        currentCardId = cardData.id;
+                        const { data, error } = await supabase
+                            .from('vip_cards')
+                            .insert([cardData])
+                            .select();
+                        
+                        result = { data, error };
+                        if (data && data.length > 0) {
+                            currentCardId = data[0].id;
+                        }
                     }
                     
-                    // 保存到本地存储
-                    localStorage.setItem('vip_cards', JSON.stringify(cardsData));
+                    const { data, error } = result;
                     
-                    showNotification('数据已成功保存！');
-                    
-                    // 重新加载卡片列表
-                    loadSavedCards();
-                    
+                    if (error) {
+                        console.error('保存错误:', error);
+                        showNotification('保存失败: ' + error.message, true);
+                    } else {
+                        console.log('保存成功:', data);
+                        showNotification('数据已成功保存到数据库！');
+                        
+                        // 重新加载卡片列表
+                        await loadSavedCards();
+                        
+                        // 高亮当前卡片
+                        if (currentCardId) {
+                            document.querySelectorAll('.card-item').forEach(item => {
+                                item.classList.remove('active');
+                                if (item.dataset.id === currentCardId) {
+                                    item.classList.add('active');
+                                }
+                            });
+                        }
+                    }
                 } catch (err) {
                     console.error('保存异常:', err);
                     showNotification('保存过程中发生错误', true);
                 }
             });
             
-            // 新建卡片
-            newCardBtn.addEventListener('click', function() {
-                // 清空表单
-                cardName.value = '';
-                flightNumber.value = '';
-                flightTime.value = '';
-                flightDate.value = '';
-                guestName.value = '';
-                destination.value = '';
-                guestColor.value = '#000000';
-                hotelName.value = '';
-                hotelLocation.value = '';
-                
-                currentCardId = null;
-                
-                // 取消选中状态
-                document.querySelectorAll('.card-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                
-                updatePreview();
-                showNotification('已创建新卡片，请填写信息');
-            });
-            
             // 刷新卡片列表
-            refreshBtn.addEventListener('click', function() {
-                loadSavedCards();
+            refreshBtn.addEventListener('click', async function() {
+                await loadSavedCards();
                 showNotification('卡片列表已刷新');
             });
             
             // 删除卡片
-            confirmDelete.addEventListener('click', function() {
+            confirmDelete.addEventListener('click', async function() {
                 try {
-                    // 从数组中删除
-                    cardsData = cardsData.filter(card => card.id !== cardToDelete);
+                    const { error } = await supabase
+                        .from('vip_cards')
+                        .delete()
+                        .eq('id', cardToDelete);
                     
-                    // 更新本地存储
-                    localStorage.setItem('vip_cards', JSON.stringify(cardsData));
-                    
-                    showNotification('卡片已成功删除');
-                    
-                    if (currentCardId === cardToDelete) {
-                        currentCardId = null;
-                        // 清空表单
-                        cardName.value = '';
-                        flightNumber.value = '';
-                        flightTime.value = '';
-                        flightDate.value = '';
-                        guestName.value = '';
-                        destination.value = '';
-                        guestColor.value = '#000000';
-                        hotelName.value = '';
-                        hotelLocation.value = '';
-                        updatePreview();
+                    if (error) {
+                        console.error('删除错误:', error);
+                        showNotification('删除失败: ' + error.message, true);
+                    } else {
+                        console.log('删除成功');
+                        showNotification('卡片已成功删除');
+                        
+                        // 如果删除的是当前卡片，清空当前卡片ID
+                        if (currentCardId === cardToDelete) {
+                            currentCardId = null;
+                        }
+                        
+                        // 重新加载卡片列表
+                        await loadSavedCards();
                     }
                     
-                    // 重新加载卡片列表
-                    loadSavedCards();
-                    
+                    deleteModal.classList.remove('show');
+                    cardToDelete = null;
                 } catch (err) {
                     console.error('删除异常:', err);
                     showNotification('删除过程中发生错误', true);
-                } finally {
                     deleteModal.classList.remove('show');
-                    cardToDelete = null;
                 }
             });
             
             // 关闭删除模态框
             closeDeleteModal.addEventListener('click', function() {
                 deleteModal.classList.remove('show');
-                cardToDelete = null;
             });
             
             cancelDelete.addEventListener('click', function() {
                 deleteModal.classList.remove('show');
-                cardToDelete = null;
             });
             
             // 初始化加载卡片列表
             loadSavedCards();
-            showNotification('欢迎使用贵宾接待卡片生成器！');
         });
     </script>
 </body>
