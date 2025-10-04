@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>卡片生成器</title>
+    <title>贵宾接待卡片生成器</title>
     <!-- 引入Supabase客户端 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* 之前的样式保持不变，只添加新样式 */
         * {
             margin: 0;
             padding: 0;
@@ -148,6 +149,7 @@
         
         .control-group {
             margin-bottom: 20px;
+            position: relative;
         }
         
         .control-group h3 {
@@ -402,6 +404,34 @@
             color: white;
         }
         
+        /* 酒店名称和地址自动提示样式 */
+        .hotel-suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .hotel-suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .hotel-suggestion-item:hover {
+            background: #f0f7ff;
+        }
+        
+        .hotel-name-container, .hotel-location-container {
+            position: relative;
+        }
+        
         @media (max-width: 992px) {
             .container {
                 flex-direction: column;
@@ -450,10 +480,31 @@
                 flex-direction: column;
             }
         }
+        /* 时间选择器样式 */
+        .time-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .time-input-group input[type="time"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+        }
+        
+        .time-input-group input[type="time"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- 之前的HTML结构保持不变，只修改时间输入部分 -->
+     <div class="container">
         <!-- 侧边栏 -->
         <div class="sidebar">
             <div class="sidebar-header">
@@ -471,14 +522,15 @@
         <!-- 主内容区 -->
         <div class="main-content">
             <header>
-                <h1>卡片生成器</h1>
-</header>
+                <h1>贵宾接待卡片生成器</h1>
+                <p class="subtitle">创建并保存专业美观的贵宾接待卡片</p>
+            </header>
             
             <div class="editor-area">
                 <div class="controls">
                     <div class="control-group">
                         <h3>卡片名称</h3>
-                        <input type="text" id="cardName" placeholder="为卡片命名" value="我的卡片">
+                        <input type="text" id="cardName" placeholder="为卡片命名" value="未命名卡片">
                     </div>
                     
                     <div class="control-group">
@@ -487,10 +539,12 @@
                     </div>
                     
                     <div class="control-group">
-                        <h3>时间信息</h3>
-                        <input type="text" id="flightTime" placeholder="时间" value="">
-                        <input type="date" id="flightDate" value="">
-                    </div>
+        <h3>时间信息</h3>
+        <div class="time-input-group">
+            <input type="time" id="flightTime" value="25:61">
+            <input type="date" id="flightDate" value="2025-10-01">
+        </div>
+    </div>
                     
                     <div class="control-group">
                         <h3>贵宾信息</h3>
@@ -502,13 +556,19 @@
                         <h3>人物颜色</h3>
                         <div class="color-picker">
                           <input type="color" id="guestColor" value="#000000">
-                      </div>
+                        </div>
                     </div>
                     
                     <div class="control-group">
                         <h3>酒店信息</h3>
-                        <input type="text" id="hotelName" placeholder="酒店名称" value="">
-                        <input type="text" id="hotelLocation" placeholder="酒店地点" value="">
+                        <div class="hotel-name-container">
+                            <input type="text" id="hotelName" placeholder="酒店名称" value="" autocomplete="off">
+                            <div class="hotel-suggestions" id="hotelNameSuggestions"></div>
+                        </div>
+                        <div class="hotel-location-container">
+                            <input type="text" id="hotelLocation" placeholder="酒店地点" value="" autocomplete="off">
+                            <div class="hotel-suggestions" id="hotelLocationSuggestions"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -557,10 +617,14 @@
     </div>
     
     <!-- 通知 -->
-    <div id="notification" class="notification"></div>
+<div id="notification" class="notification"></div>
 
+    
+    
+    <!-- 其余的HTML和JavaScript保持不变 -->
+    
     <script>
-        // 初始化Supabase客户端
+         // 初始化Supabase客户端
         const supabaseUrl = 'https://fezxhcmiefdbvqmhczut.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -576,6 +640,8 @@
             const guestColor = document.getElementById('guestColor');
             const hotelName = document.getElementById('hotelName');
             const hotelLocation = document.getElementById('hotelLocation');
+            const hotelNameSuggestions = document.getElementById('hotelNameSuggestions');
+            const hotelLocationSuggestions = document.getElementById('hotelLocationSuggestions');
             
             // 获取所有预览元素
             const previewFlight = document.getElementById('previewFlight');
@@ -605,6 +671,10 @@
             // 当前选中的卡片ID
             let currentCardId = null;
             let cardToDelete = null;
+            
+            // 存储所有酒店名称和地址
+            let allHotelNames = [];
+            let allHotelLocations = [];
             
             // 显示通知
             function showNotification(message, isError = false) {
@@ -639,6 +709,92 @@
                 previewGuest.style.color = guestColor.value;
             }
             
+            // 显示酒店名称建议
+            function showHotelNameSuggestions() {
+                const inputValue = hotelName.value.toLowerCase();
+                
+                if (!inputValue) {
+                    hotelNameSuggestions.style.display = 'none';
+                    return;
+                }
+                
+                // 过滤匹配的酒店名称
+                const filteredNames = allHotelNames.filter(name => 
+                    name.toLowerCase().includes(inputValue)
+                );
+                
+                if (filteredNames.length === 0) {
+                    hotelNameSuggestions.style.display = 'none';
+                    return;
+                }
+                
+                // 显示建议
+                hotelNameSuggestions.innerHTML = '';
+                filteredNames.forEach(name => {
+                    const item = document.createElement('div');
+                    item.className = 'hotel-suggestion-item';
+                    item.textContent = name;
+                    item.addEventListener('click', () => {
+                        hotelName.value = name;
+                        hotelNameSuggestions.style.display = 'none';
+                        updatePreview();
+                    });
+                    hotelNameSuggestions.appendChild(item);
+                });
+                
+                hotelNameSuggestions.style.display = 'block';
+            }
+            
+            // 显示酒店地址建议
+            function showHotelLocationSuggestions() {
+                const inputValue = hotelLocation.value.toLowerCase();
+                
+                if (!inputValue) {
+                    hotelLocationSuggestions.style.display = 'none';
+                    return;
+                }
+                
+                // 过滤匹配的酒店地址
+                const filteredLocations = allHotelLocations.filter(location => 
+                    location.toLowerCase().includes(inputValue)
+                );
+                
+                if (filteredLocations.length === 0) {
+                    hotelLocationSuggestions.style.display = 'none';
+                    return;
+                }
+                
+                // 显示建议
+                hotelLocationSuggestions.innerHTML = '';
+                filteredLocations.forEach(location => {
+                    const item = document.createElement('div');
+                    item.className = 'hotel-suggestion-item';
+                    item.textContent = location;
+                    item.addEventListener('click', () => {
+                        hotelLocation.value = location;
+                        hotelLocationSuggestions.style.display = 'none';
+                        updatePreview();
+                    });
+                    hotelLocationSuggestions.appendChild(item);
+                });
+                
+                hotelLocationSuggestions.style.display = 'block';
+            }
+            
+            // 隐藏酒店名称建议
+            function hideHotelNameSuggestions() {
+                setTimeout(() => {
+                    hotelNameSuggestions.style.display = 'none';
+                }, 200);
+            }
+            
+            // 隐藏酒店地址建议
+            function hideHotelLocationSuggestions() {
+                setTimeout(() => {
+                    hotelLocationSuggestions.style.display = 'none';
+                }, 200);
+            }
+            
             // 初始化预览
             updatePreview();
             
@@ -649,8 +805,22 @@
             guestName.addEventListener('input', updatePreview);
             destination.addEventListener('input', updatePreview);
             guestColor.addEventListener('input', updatePreview);
-            hotelName.addEventListener('input', updatePreview);
-            hotelLocation.addEventListener('input', updatePreview);
+            hotelName.addEventListener('input', function() {
+                updatePreview();
+                showHotelNameSuggestions();
+            });
+            hotelLocation.addEventListener('input', function() {
+                updatePreview();
+                showHotelLocationSuggestions();
+            });
+            
+            // 酒店名称建议相关事件
+            hotelName.addEventListener('focus', showHotelNameSuggestions);
+            hotelName.addEventListener('blur', hideHotelNameSuggestions);
+            
+            // 酒店地址建议相关事件
+            hotelLocation.addEventListener('focus', showHotelLocationSuggestions);
+            hotelLocation.addEventListener('blur', hideHotelLocationSuggestions);
             
             // 生成卡片
             generateBtn.addEventListener('click', function() {
@@ -700,6 +870,7 @@
                 const totalWidth = welcomeWidth1 + guestNameWidth + welcomeWidth2 + destinationWidth;
                 const startX = (canvas.width - totalWidth) / 2;
                 
+
                 // 分别绘制各部分文本
                 context.fillText(welcomeText1, startX + welcomeWidth1/2, 340);
                 
@@ -774,8 +945,14 @@
                     // 清空卡片列表
                     cardList.innerHTML = '';
                     
+                    // 收集所有酒店名称和地址（去重）
+                    const namesSet = new Set();
+                    const locationsSet = new Set();
+                    
                     if (data.length === 0) {
                         cardList.innerHTML = '<li style="padding: 15px; text-align: center; color: #7f8c8d;">暂无保存的卡片</li>';
+                        allHotelNames = [];
+                        allHotelLocations = [];
                         return;
                     }
                     
@@ -791,6 +968,14 @@
                         `;
                         
                         cardList.appendChild(li);
+                        
+                        // 收集酒店名称和地址
+                        if (card.hotel_name) {
+                            namesSet.add(card.hotel_name);
+                        }
+                        if (card.hotel_location) {
+                            locationsSet.add(card.hotel_location);
+                        }
                         
                         // 添加点击事件
                         li.addEventListener('click', function(e) {
@@ -818,6 +1003,10 @@
                         });
                     });
                     
+                    // 更新酒店名称和地址列表
+                    allHotelNames = Array.from(namesSet);
+                    allHotelLocations = Array.from(locationsSet);
+                    
                 } catch (err) {
                     console.error('加载卡片异常:', err);
                     showNotification('加载卡片过程中发生错误', true);
@@ -843,7 +1032,7 @@
             // 新建卡片功能
             newCardBtn.addEventListener('click', function() {
                 // 清空表单
-                cardName.value = '我的卡片';
+                cardName.value = '未命名卡片';
                 flightNumber.value = '';
                 flightTime.value = '';
                 flightDate.value = '';

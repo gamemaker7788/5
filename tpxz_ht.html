@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卡片系统后台</title>
+    <!-- 引入Supabase客户端 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #bdc3c7;
+            font-size: 1rem;
+        }
+        
+        .admin-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .search-bar input, .search-bar select {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+        
+        .search-bar button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .search-bar button:hover {
+            background: #2980b9;
+        }
+        
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .data-table tr:hover {
+            background: #f5f9ff;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        
+        .pagination button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .pagination button.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            background: #27ae60;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: #e74c3c;
+        }
+        
+        .export-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: auto;
+            transition: background 0.3s;
+        }
+        
+        .export-btn:hover {
+            background: #219653;
+        }
+        
+        @media (max-width: 768px) {
+            .data-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .search-bar {
+                flex-direction: column;
+            }
+            
+            .search-bar input, .search-bar select {
+                width: 100%;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>卡片系统后台</h1>
+            <p class="subtitle">后台管理 - 信息查询一览无余</p>
+        </header>
+        
+        <div class="admin-content">
+            <div class="search-bar">
+                <input type="text" id="searchName" placeholder="搜索贵宾姓名">
+                <input type="text" id="searchFlight" placeholder="搜索航班号">
+                <input type="text" id="searchDestination" placeholder="搜索目的地">
+                <select id="searchDate">
+                    <option value="">所有日期</option>
+                    <option value="today">今天</option>
+                    <option value="week">本周</option>
+                    <option value="month">本月</option>
+                    <option value="year">本年</option>
+                </select>
+                <button id="searchBtn">搜索</button>
+                <button class="export-btn" id="exportBtn">导出数据</button>
+            </div>
+            
+            <!-- 新增统计信息区域 -->
+            <div class="stats-container" id="statsContainer">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">总记录数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="filteredCount">0</div>
+                    <div class="stat-label">搜索结果数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="todayCount">0</div>
+                    <div class="stat-label">今日新增</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="weekCount">0</div>
+                    <div class="stat-label">本周新增</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="monthCount">0</div>
+                    <div class="stat-label">本月新增</div>
+                </div>
+            </div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>贵宾姓名</th>
+                        <th>航班号</th>
+                        <th>时间</th>
+                        <th>目的地</th>
+                        <th>酒店名称</th>
+                        <th>酒店地点</th>
+                        <th>创建时间</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <!-- 数据将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+            
+            <div class="pagination">
+                <button id="prevPage">上一页</button>
+                <div id="pageNumbers"></div>
+                <button id="nextPage">下一页</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 通知 -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // 初始化Supabase客户端
+        const supabaseUrl = 'https://fezxhcmiefdbvqmhczut.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const searchName = document.getElementById('searchName');
+            const searchFlight = document.getElementById('searchFlight');
+            const searchDestination = document.getElementById('searchDestination');
+            const searchDate = document.getElementById('searchDate');
+            const searchBtn = document.getElementById('searchBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const dataTableBody = document.getElementById('dataTableBody');
+            const prevPage = document.getElementById('prevPage');
+            const nextPage = document.getElementById('nextPage');
+            const pageNumbers = document.getElementById('pageNumbers');
+            const notification = document.getElementById('notification');
+            
+            // 统计元素
+            const totalCount = document.getElementById('totalCount');
+            const filteredCount = document.getElementById('filteredCount');
+            const todayCount = document.getElementById('todayCount');
+            const weekCount = document.getElementById('weekCount');
+            const monthCount = document.getElementById('monthCount');
+            
+            // 分页变量
+            let currentPage = 1;
+            const itemsPerPage = 10;
+            let totalItems = 0;
+            let allData = [];
+            let filteredData = [];
+            
+            // 显示通知
+            function showNotification(message, isError = false) {
+                notification.textContent = message;
+                notification.classList.toggle('error', isError);
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // 格式化日期
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+            // 获取时间范围
+            function getDateRange(range) {
+                const now = new Date();
+                let startDate;
+                
+                switch(range) {
+                    case 'today':
+                        startDate = new Date(now.setHours(0, 0, 0, 0));
+                        break;
+                    case 'week':
+                        startDate = new Date(now.setDate(now.getDate() - now.getDay()));
+                        startDate.setHours(0, 0, 0, 0);
+                        break;
+                    case 'month':
+                        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                        break;
+                    case 'year':
+                        startDate = new Date(now.getFullYear(), 0, 1);
+                        break;
+                    default:
+                        return null;
+                }
+                
+                return startDate;
+            }
+            
+            // 加载统计数据
+            async function loadStatistics() {
+                try {
+                    // 获取总记录数
+                    const { count: total } = await supabase
+                        .from('vip_cards')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    totalCount.textContent = total || 0;
+                    
+                    // 获取今日新增
+                    const todayStart = getDateRange('today');
+                    const { count: today } = await supabase
+                        .from('vip_cards')
+                        .select('*', { count: 'exact', head: true })
+                        .gte('created_at', todayStart.toISOString());
+                    
+                    todayCount.textContent = today || 0;
+                    
+                    // 获取本周新增
+                    const weekStart = getDateRange('week');
+                    const { count: week } = await supabase
+                        .from('vip_cards')
+                        .select('*', { count: 'exact', head: true })
+                        .gte('created_at', weekStart.toISOString());
+                    
+                    weekCount.textContent = week || 0;
+                    
+                    // 获取本月新增
+                    const monthStart = getDateRange('month');
+                    const { count: month } = await supabase
+                        .from('vip_cards')
+                        .select('*', { count: 'exact', head: true })
+                        .gte('created_at', monthStart.toISOString());
+                    
+                    monthCount.textContent = month || 0;
+                    
+                } catch (err) {
+                    console.error('加载统计数据错误:', err);
+                    showNotification('加载统计数据失败', true);
+                }
+            }
+            
+            // 加载数据
+            async function loadData() {
+                try {
+                    let query = supabase
+                        .from('vip_cards')
+                        .select('*', { count: 'exact' });
+                    
+                    // 应用搜索条件
+                    if (searchName.value) {
+                        query = query.ilike('guest_name', `%${searchName.value}%`);
+                    }
+                    
+                    if (searchFlight.value) {
+                        query = query.ilike('flight_number', `%${searchFlight.value}%`);
+                    }
+                    
+                    if (searchDestination.value) {
+                        query = query.ilike('destination', `%${searchDestination.value}%`);
+                    }
+                    
+                    // 应用日期筛选
+                    if (searchDate.value) {
+                        const startDate = getDateRange(searchDate.value);
+                        if (startDate) {
+                            query = query.gte('created_at', startDate.toISOString());
+                        }
+                    }
+                    
+                    // 获取数据总数
+                    const { count } = await query;
+                    totalItems = count;
+                    filteredCount.textContent = count || 0;
+                    
+                    // 获取当前页数据
+                    const { data, error } = await query
+                        .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('加载数据错误:', error);
+                        showNotification('加载数据失败: ' + error.message, true);
+                        return;
+                    }
+                    
+                    allData = data;
+                    renderTable();
+                    renderPagination();
+                    
+                } catch (err) {
+                    console.error('加载数据异常:', err);
+                    showNotification('加载数据过程中发生错误', true);
+                }
+            }
+            
+            // 渲染表格
+            function renderTable() {
+                dataTableBody.innerHTML = '';
+                
+                if (allData.length === 0) {
+                    dataTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 30px; color: #7f8c8d;">
+                                没有找到匹配的数据
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                allData.forEach(item => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${item.guest_name || '-'}</td>
+                        <td>${item.flight_number || '-'}</td>
+                        <td>${item.flight_time ? `${item.flight_time} (${item.flight_date})` : '-'}</td>
+                        <td>${item.destination || '-'}</td>
+                        <td>${item.hotel_name || '-'}</td>
+                        <td>${item.hotel_location || '-'}</td>
+                        <td>${formatDate(item.created_at)}</td>
+                    `;
+                    
+                    dataTableBody.appendChild(row);
+                });
+            }
+            
+            // 渲染分页
+            function renderPagination() {
+                pageNumbers.innerHTML = '';
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                
+                if (totalPages <= 1) {
+                    prevPage.style.display = 'none';
+                    nextPage.style.display = 'none';
+                    return;
+                }
+                
+                prevPage.style.display = 'inline-block';
+                nextPage.style.display = 'inline-block';
+                
+                // 显示最多5个页码
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    if (i === currentPage) {
+                        pageBtn.classList.add('active');
+                    }
+                    
+                    pageBtn.addEventListener('click', () => {
+                        currentPage = i;
+                        loadData();
+                    });
+                    
+                    pageNumbers.appendChild(pageBtn);
+                }
+                
+                // 更新上一页/下一页按钮状态
+                prevPage.disabled = currentPage === 1;
+                nextPage.disabled = currentPage === totalPages;
+            }
+            
+            // 导出数据为CSV
+            async function exportData() {
+                try {
+                    // 获取所有数据（不考虑分页）
+                    const { data, error } = await supabase
+                        .from('vip_cards')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('导出数据错误:', error);
+                        showNotification('导出数据失败: ' + error.message, true);
+                        return;
+                    }
+                    
+                    if (data.length === 0) {
+                        showNotification('没有数据可导出', true);
+                        return;
+                    }
+                    
+                    // 准备CSV内容
+                    let csvContent = "贵宾姓名,航班号,时间,日期,目的地,酒店名称,酒店地点,创建时间\n";
+                    
+                    data.forEach(item => {
+                        const row = [
+                            `"${item.guest_name || ''}"`,
+                            `"${item.flight_number || ''}"`,
+                            `"${item.flight_time || ''}"`,
+                            `"${item.flight_date || ''}"`,
+                            `"${item.destination || ''}"`,
+                            `"${item.hotel_name || ''}"`,
+                            `"${item.hotel_location || ''}"`,
+                            `"${formatDate(item.created_at)}"`
+                        ];
+                        csvContent += row.join(',') + '\n';
+                    });
+                    
+                    // 创建下载链接
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `贵宾接待数据_${new Date().toISOString().slice(0, 10)}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    showNotification('数据导出成功！');
+                    
+                } catch (err) {
+                    console.error('导出数据异常:', err);
+                    showNotification('导出数据过程中发生错误', true);
+                }
+            }
+            
+            // 绑定事件
+            searchBtn.addEventListener('click', function() {
+                currentPage = 1;
+                loadData();
+            });
+            
+            exportBtn.addEventListener('click', exportData);
+            
+            prevPage.addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadData();
+                }
+            });
+            
+            nextPage.addEventListener('click', function() {
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    loadData();
+                }
+            });
+            
+            // 初始化加载数据和统计信息
+            loadData();
+            loadStatistics();
+        });
+    </script>
+</body>
+</html>
