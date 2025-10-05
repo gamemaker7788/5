@@ -16,7 +16,7 @@
             /* 语言颜色标识 */
             --zh-color: #dc2626; --ru-color: #2563eb; 
             --de-color: #059669; --en-color: #7c3aed;
-            --auto-color: #6b7280;
+            --ka-color: #d97706; --auto-color: #6b7280;
         }
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
@@ -30,7 +30,7 @@
         }
         header { 
             text-align: center; margin-bottom: 30px; 
-            background: linear-gradient(135deg, var(--zh-color), var(--ru-color), var(--de-color));
+            background: linear-gradient(135deg, var(--zh-color), var(--ru-color), var(--de-color), var(--ka-color));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         header h1 { font-size: 2.8rem; margin-bottom: 10px; font-weight: 700; }
@@ -57,6 +57,7 @@
         .ru-select select { border-left: 4px solid var(--ru-color); }
         .de-select select { border-left: 4px solid var(--de-color); }
         .en-select select { border-left: 4px solid var(--en-color); }
+        .ka-select select { border-left: 4px solid var(--ka-color); }
         .auto-select select { border-left: 4px solid var(--auto-color); }
         
         .swap-btn { 
@@ -82,6 +83,7 @@
         .badge-ru { background: var(--ru-color); }
         .badge-de { background: var(--de-color); }
         .badge-en { background: var(--en-color); }
+        .badge-ka { background: var(--ka-color); }
         .badge-auto { background: var(--auto-color); }
 
         textarea, .output-area {
@@ -145,6 +147,7 @@
         .ru-btn:hover { border-color: var(--ru-color); color: var(--ru-color); }
         .de-btn:hover { border-color: var(--de-color); color: var(--de-color); }
         .en-btn:hover { border-color: var(--en-color); color: var(--en-color); }
+        .ka-btn:hover { border-color: var(--ka-color); color: var(--ka-color); }
 
         .loading { 
             text-align: center; margin: 20px 0; 
@@ -228,6 +231,13 @@
             font-style: italic;
         }
 
+        /* 格鲁吉亚文特殊样式 */
+        .ka-text { 
+            font-family: 'Noto Sans Georgian', 'Segoe UI', sans-serif;
+            direction: ltr;
+        }
+        .output-area.ka-text { font-weight: 500; }
+
         @media (max-width: 768px) {
             .container { padding: 20px; }
             .language-selectors { grid-template-columns: 1fr; }
@@ -240,17 +250,15 @@
             .history-controls { flex-direction: column; align-items: stretch; }
             .search-box { width: 100%; }
         }
-
-        /* 德语特殊样式 */
-        .de-text { font-family: 'Arial', sans-serif; }
-        .output-area.de-text { font-weight: 500; }
     </style>
+    <!-- 加载格鲁吉亚文字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>翻译</h1>
-            <p>中文、俄语、德语、英语互译</p>
+            <h1>多语言翻译</h1>
+            <p>支持中文、俄语、德语、英语、格鲁吉亚文互译</p>
         </header>
 
         <div class="language-selectors">
@@ -261,6 +269,7 @@
                     <option value="ru">俄语</option>
                     <option value="de">德语</option>
                     <option value="en">英语</option>
+                    <option value="ka">格鲁吉亚文</option>
                 </select>
                 <span class="lang-flag" id="sourceFlag">🌐</span>
             </div>
@@ -271,21 +280,23 @@
                 <select id="targetLang">
                     <option value="zh">中文</option>
                     <option value="ru">俄语</option>
-                    <option value="de" selected>德语</option>
+                    <option value="de">德语</option>
                     <option value="en">英语</option>
+                    <option value="ka" selected>格鲁吉亚文</option>
                 </select>
-                <span class="lang-flag" id="targetFlag">🇩🇪</span>
+                <span class="lang-flag" id="targetFlag">🇬🇪</span>
             </div>
         </div>
 
         <!-- 快速语言选择 -->
         <div class="language-grid">
-            <button onclick="setTranslation('zh', 'de')" class="lang-quick-btn zh-btn">中文 → 德语</button>
-            <button onclick="setTranslation('de', 'zh')" class="lang-quick-btn de-btn">德语 → 中文</button>
+            <button onclick="setTranslation('zh', 'ka')" class="lang-quick-btn zh-btn">中文 → 格鲁吉亚文</button>
+            <button onclick="setTranslation('ka', 'zh')" class="lang-quick-btn ka-btn">格鲁吉亚文 → 中文</button>
             <button onclick="setTranslation('zh', 'ru')" class="lang-quick-btn zh-btn">中文 → 俄语</button>
             <button onclick="setTranslation('ru', 'zh')" class="lang-quick-btn ru-btn">俄语 → 中文</button>
             <button onclick="setTranslation('de', 'en')" class="lang-quick-btn de-btn">德语 → 英语</button>
             <button onclick="setTranslation('en', 'de')" class="lang-quick-btn en-btn">英语 → 德语</button>
+            <button onclick="setTranslation('ka', 'en')" class="lang-quick-btn ka-btn">格鲁吉亚文 → 英语</button>
         </div>
 
         <div class="translate-box">
@@ -304,7 +315,7 @@
             <div class="output-section">
                 <div class="section-header">
                     <h3>翻译结果</h3>
-                    <span class="lang-badge" id="targetBadge">德语</span>
+                    <span class="lang-badge" id="targetBadge">格鲁吉亚文</span>
                 </div>
                 <div id="outputText" class="output-area">翻译结果将显示在这里...</div>
                 <div class="stats-bar">
@@ -370,6 +381,7 @@
                     'ru': { name: '俄语', flag: '🇷🇺', code: 'ru-RU', color: 'var(--ru-color)' },
                     'de': { name: '德语', flag: '🇩🇪', code: 'de-DE', color: 'var(--de-color)' },
                     'en': { name: '英语', flag: '🇺🇸', code: 'en-US', color: 'var(--en-color)' },
+                    'ka': { name: '格鲁吉亚文', flag: '🇬🇪', code: 'ka-GE', color: 'var(--ka-color)' },
                     'auto': { name: '自动检测', flag: '🌐', code: '', color: 'var(--auto-color)' }
                 };
 
@@ -378,7 +390,7 @@
                 };
 
                 this.history = [];
-                this.maxHistoryItems = 50; // 最大保存50条历史记录
+                this.maxHistoryItems = 50;
                 
                 this.init();
             }
@@ -388,12 +400,11 @@
                 this.setupEventListeners();
                 this.updateLanguageDisplays();
                 this.updateApiInfo();
-                this.setupGermanSpecialChars();
+                this.setupSpecialChars();
                 this.renderHistory();
             }
 
             setupEventListeners() {
-                // 语言选择变化
                 document.getElementById('sourceLang').addEventListener('change', () => {
                     this.updateLanguageDisplays();
                     this.autoDetectLanguage();
@@ -403,27 +414,35 @@
                     this.updateLanguageDisplays();
                 });
 
-                // 输入文本监听
                 document.getElementById('inputText').addEventListener('input', () => {
                     this.updateCharCount();
                     this.autoDetectLanguage();
                 });
             }
 
-            setupGermanSpecialChars() {
-                // 德语特殊字符工具栏
-                const germanChars = ['ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü'];
+            setupSpecialChars() {
+                // 德语和格鲁吉亚文特殊字符工具栏
+                const specialChars = {
+                    'de': ['ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü'],
+                    'ka': ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'თ', 'ი', 'კ', 'ლ', 'მ', 
+                          'ნ', 'ო', 'პ', 'ჟ', 'რ', 'ს', 'ტ', 'უ', 'ფ', 'ქ', 'ღ', 'ყ', 
+                          'შ', 'ჩ', 'ც', 'ძ', 'წ', 'ჭ', 'ხ', 'ჯ', 'ჰ']
+                };
+
                 const toolbar = document.createElement('div');
                 toolbar.style.margin = '10px 0';
                 toolbar.innerHTML = `
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <span style="font-size: 14px; color: var(--text-light);">德语字符: </span>
-                        ${germanChars.map(char => 
-                            `<button onclick="insertGermanChar('${char}')" 
-                                style="padding: 5px 10px; border: 1px solid var(--border); 
-                                border-radius: 4px; background: var(--bg); cursor: pointer;">
-                                ${char}
-                            </button>`
+                        <span style="font-size: 14px; color: var(--text-light);">特殊字符: </span>
+                        ${Object.entries(specialChars).map(([lang, chars]) => 
+                            chars.map(char => 
+                                `<button onclick="insertSpecialChar('${char}')" 
+                                    style="padding: 5px 10px; border: 1px solid var(--border); 
+                                    border-radius: 4px; background: var(--bg); cursor: pointer;
+                                    font-family: ${lang === 'ka' ? 'Noto Sans Georgian' : 'inherit'}">
+                                    ${char}
+                                </button>`
+                            ).join('')
                         ).join('')}
                     </div>
                 `;
@@ -463,10 +482,7 @@
                     date: new Date().toLocaleDateString()
                 };
 
-                // 添加到开头
                 this.history.unshift(historyItem);
-
-                // 限制历史记录数量
                 if (this.history.length > this.maxHistoryItems) {
                     this.history = this.history.slice(0, this.maxHistoryItems);
                 }
@@ -651,7 +667,6 @@
                 const targetLang = document.getElementById('targetLang').value;
                 const provider = document.getElementById('apiProvider').value;
 
-
                 if (!inputText) {
                     this.showNotification('请输入要翻译的文本', 'error');
                     return;
@@ -700,11 +715,9 @@
                 outputElement.textContent = text;
                 outputElement.style.color = isError ? 'var(--error)' : 'inherit';
                 
-                if (document.getElementById('targetLang').value === 'de') {
-                    outputElement.classList.add('de-text');
-                } else {
-                    outputElement.classList.remove('de-text');
-                }
+                // 根据目标语言设置特殊样式
+                const targetLang = document.getElementById('targetLang').value;
+                outputElement.className = `output-area ${targetLang}-text`;
             }
 
             showLoading(show) {
@@ -763,7 +776,7 @@
 
                 if ('speechSynthesis' in window) {
                     const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.lang = this.languages[targetLang]?.code || 'de-DE';
+                    utterance.lang = this.languages[targetLang]?.code || 'ka-GE';
                     utterance.rate = 0.8;
                     speechSynthesis.speak(utterance);
                 }
@@ -789,6 +802,26 @@
                 document.getElementById('inputLangDetect').textContent = '';
                 this.updateCharCount();
             }
+
+            autoDetectLanguage() {
+                const text = document.getElementById('inputText').value;
+                if (text.length > 2) {
+                    // 简单的语言检测
+                    if (/[\u4e00-\u9fff]/.test(text)) {
+                        document.getElementById('inputLangDetect').textContent = '检测到: 中文';
+                    } else if (/[ა-ჰ]/.test(text)) {
+                        document.getElementById('inputLangDetect').textContent = '检测到: 格鲁吉亚文';
+                    } else if (/[а-яА-Я]/.test(text)) {
+                        document.getElementById('inputLangDetect').textContent = '检测到: 俄语';
+                    } else if (/[äöüßÄÖÜ]/.test(text)) {
+                        document.getElementById('inputLangDetect').textContent = '检测到: 德语';
+                    } else if (/[a-zA-Z]/.test(text)) {
+                        document.getElementById('inputLangDetect').textContent = '检测到: 英语';
+                    }
+                } else {
+                    document.getElementById('inputLangDetect').textContent = '';
+                }
+            }
         }
 
         // 全局函数
@@ -808,7 +841,7 @@
             translator.updateLanguageDisplays();
         }
 
-        function insertGermanChar(char) {
+        function insertSpecialChar(char) {
             const input = document.getElementById('inputText');
             const start = input.selectionStart;
             const end = input.selectionEnd;
@@ -818,7 +851,21 @@
         }
 
         function showLanguageHelp() {
-            alert(`德语输入帮助：\n\n• ä, ö, ü: 元音变音\n• ß: 尖锐的S\n• 名词首字母大写\n• 动词第二位\n\n快捷键：\n• Ctrl+Enter: 翻译\n• Ctrl+C: 复制结果`);
+            alert(`语言帮助：
+            
+格鲁吉亚文:
+• 使用独特的格鲁吉亚字母
+• 从左到右书写
+• 没有大小写区分
+
+德语:
+• ä, ö, ü: 元音变音
+• ß: 尖锐的S
+• 名词首字母大写
+
+快捷键:
+• Ctrl+Enter: 翻译
+• Ctrl+C: 复制结果`);
         }
 
         function filterHistory() { translator.filterHistory(); }
