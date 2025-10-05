@@ -588,10 +588,19 @@
                 width: 100%;
             }
         }
+		/* 在样式部分添加 */
+        .extra-service-date {
+            width: 120px;
+            padding: 0.3rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin-left: 0.5rem;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- HTML内容保持不变 -->
+ <div class="container">
         <header>
             <div class="logo">
                 <i class="fas fa-globe-europe"></i>
@@ -677,6 +686,7 @@
                             <th width="15%">日期</th>
                             <th width="30%">行程</th>
                             <th width="10%">行程报价</th>
+
                             <th width="25%">住宿</th>
                             <th width="10%">住宿报价</th>
                             <th width="5%">导游</th>
@@ -821,628 +831,697 @@
         </footer>
     </div>
 
-   <script>
-        // 国家区号选项
-        const countryCodes = [
-            { code: "+86", name: "中国" },
-            { code: "+1", name: "美国/加拿大" },
-            { code: "+44", name: "英国" },
-            { code: "+81", name: "日本" },
-            { code: "+82", name: "韩国" },
-            { code: "+852", name: "香港" },
-            { code: "+853", name: "澳门" },
-            { code: "+886", name: "台湾" },
-            { code: "+995", name: "格鲁吉亚" },
-            { code: "+7", name: "俄罗斯" },
-            { code: "+90", name: "土耳其" },
-            { code: "+971", name: "阿联酋" },
-            { code: "+61", name: "澳大利亚" },
-            { code: "+64", name: "新西兰" }
-        ];
+<script>
+    // 国家区号选项
+    const countryCodes = [
+        { code: "+86", name: "中国" },
+        { code: "+1", name: "美国/加拿大" },
+        { code: "+44", name: "英国" },
+        { code: "+81", name: "日本" },
+        { code: "+82", name: "韩国" },
+        { code: "+852", name: "香港" },
+        { code: "+853", name: "澳门" },
+        { code: "+886", name: "台湾" },
+        { code: "+995", name: "格鲁吉亚" },
+        { code: "+7", name: "俄罗斯" },
+        { code: "+90", name: "土耳其" },
+        { code: "+971", name: "阿联酋" },
+        { code: "+61", name: "澳大利亚" },
+        { code: "+64", name: "新西兰" }
+    ];
 
-        let selectedGuide = 'no';
-        let selectedCar = '7-seat';
-        let multiSeatCount = 0;
-        let carChangePrice = 100;
-        let carChangeEnabled = false;
-        let itineraryData = [];
-        let passengers = [];
-        let selectedGuideDays = [];
-        let extraServices = [
-            { id: 'wine-tasting', name: '酒庄品酒', price: 40, unit: '/人', checked: false },
-            { id: 'tickets', name: '景点门票', price: 80, unit: '/张', checked: false }
+    // 全局变量
+    let selectedGuide = 'no';
+    let selectedCar = '7-seat';
+    let multiSeatCount = 0;
+    let carChangePrice = 100;
+    let carChangeEnabled = false;
+    let itineraryData = [];
+    let passengers = [];
+    let selectedGuideDays = [];
+    let extraServices = [
+        { id: 'wine-tasting', name: '酒庄品酒', price: 40, unit: '/人', date: '', checked: false },
+        { id: 'tickets', name: '景点门票', price: 80, unit: '/张', date: '', checked: false }
+    ];
+    let serviceCounter = 2;
+    let supabase = null;
+    
+    // Supabase配置
+    const SUPABASE_URL = 'https://fezxhcmiefdbvqmhczut.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
+    
+    // 初始化Supabase
+    function initSupabase() {
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase客户端已创建');
+            return true;
+        } catch (error) {
+            console.error('Supabase初始化错误:', error);
+            showStatus('Supabase初始化失败: ' + error.message, 'error');
+            return false;
+        }
+    }
+    
+    // 显示状态消息
+    function showStatus(message, type) {
+        alert(`${type === 'success' ? '成功' : '错误'}: ${message}`);
+    }
+    
+    // 初始化行程
+    function initializeItinerary() {
+        // 设置默认日期为今天和6天后
+        const today = new Date();
+        const endDate = new Date();
+        endDate.setDate(today.getDate() + 6);
+        
+        // 格式化为YYYY-MM-DD格式
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        
+        // 设置日期输入框的值
+        document.getElementById('start-date').value = formatDate(today);
+        document.getElementById('end-date').value = formatDate(endDate);
+        
+        // 初始只有1天行程
+        addDay();
+    }
+    
+    // 初始化乘客
+    function initializePassengers() {
+        passengers = [
+            { id: 1, name: "新乘客", countryCode: "+86", phone: "未提供" }
         ];
-        let serviceCounter = 2;
-        let supabase = null;
+        renderPassengers();
+    }
+    
+    // 添加一天行程
+    function addDay() {
+        const dayNum = itineraryData.length + 1;
+        const startDateInput = document.getElementById('start-date').value;
+        const startDate = new Date(startDateInput);
         
-        // Supabase配置
-        const SUPABASE_URL = 'https://fezxhcmiefdbvqmhczut.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
+        if (isNaN(startDate.getTime())) {
+            alert("请先选择有效的开始日期");
+            return;
+        }
         
-        // 初始化Supabase
-        function initSupabase() {
-            try {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('Supabase客户端已创建');
-                return true;
-            } catch (error) {
-                console.error('Supabase初始化错误:', error);
-                showStatus('Supabase初始化失败: ' + error.message, 'error');
-                return false;
+        const dayDate = new Date(startDate);
+        dayDate.setDate(startDate.getDate() + dayNum - 1);
+        
+        const month = dayDate.getMonth() + 1;
+        const date = dayDate.getDate();
+        
+        itineraryData.push({
+            day: dayNum,
+            date: `${month}月${date}日`,
+            plan: "自定义行程",
+            planPrice: 0,
+            accommodation: "自定义住宿",
+            accommodationPrice: 0,
+            guideService: false
+        });
+        renderItinerary();
+    }
+    
+    // 渲染行程表格
+    function renderItinerary() {
+        const itineraryBody = document.getElementById('itinerary-body');
+        if (!itineraryBody) return;
+        
+        itineraryBody.innerHTML = '';
+
+        
+        itineraryData.forEach((day, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${day.day}</td>
+                <td>
+                    <span class="editable" contenteditable="true" onblur="updateDayData(${index}, 'date', this.textContent)">${day.date}</span>
+                    <div class="day-actions">
+                        <button class="action-btn move-up" onclick="moveDayUp(${index})" ${index === 0 ? 'disabled' : ''}>↑</button>
+                        <button class="action-btn move-down" onclick="moveDayDown(${index})" ${index === itineraryData.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button class="action-btn delete" onclick="removeDay(${index})">×</button>
+                    </div>
+                </td>
+                <td><span class="editable" contenteditable="true" onblur="updateDayData(${index}, 'plan', this.textContent)">${day.plan}</span></td>
+                <td>
+                    <input type="number" class="price-input" value="${day.planPrice}" min="0" onchange="updateDayData(${index}, 'planPrice', this.value)">
+                    <span>USD</span>
+                </td>
+                <td><span class="editable" contenteditable="true" onblur="updateDayData(${index}, 'accommodation', this.textContent)">${day.accommodation}</span></td>
+                <td>
+                    <input type="number" class="price-input" value="${day.accommodationPrice}" min="0" onchange="updateDayData(${index}, 'accommodationPrice', this.value)">
+                    <span>USD</span>
+                </td>
+                <td>
+                    <input type="checkbox" class="guide-checkbox" ${day.guideService ? 'checked' : ''} 
+                           onchange="updateDayGuideService(${index}, this.checked)"
+                           ${selectedGuide === 'no' ? 'disabled' : ''}>
+                </td>
+            `;
+            itineraryBody.appendChild(row);
+        });
+        
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 更新行程数据
+    function updateDayData(index, field, value) {
+        itineraryData[index][field] = value;
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 更新导游服务选择
+    function updateDayGuideService(index, isChecked) {
+        itineraryData[index].guideService = isChecked;
+        updateSelectedGuideDays();
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 更新选择的导游天数
+    function updateSelectedGuideDays() {
+        selectedGuideDays = [];
+        itineraryData.forEach(day => {
+            if (day.guideService) {
+                selectedGuideDays.push(day.day);
             }
+        });
+    }
+    
+    // 移动行程向上
+    function moveDayUp(index) {
+        if (index > 0) {
+            const temp = itineraryData[index];
+            itineraryData[index] = itineraryData[index - 1];
+            itineraryData[index - 1] = temp;
+            updateDayNumbers();
+            renderItinerary();
+        }
+    }
+    
+    // 移动行程向下
+    function moveDayDown(index) {
+        if (index < itineraryData.length - 1) {
+            const temp = itineraryData[index];
+            itineraryData[index] = itineraryData[index + 1];
+            itineraryData[index + 1] = temp;
+            updateDayNumbers();
+            renderItinerary();
+        }
+    }
+    
+    // 更新天数编号
+    function updateDayNumbers() {
+        const startDateInput = document.getElementById('start-date').value;
+        const startDate = new Date(startDateInput);
+        
+        if (isNaN(startDate.getTime())) {
+            alert("请选择有效的开始日期");
+            return;
         }
         
-        // 显示状态消息
-        function showStatus(message, type) {
-            alert(`${type === 'success' ? '成功' : '错误'}: ${message}`);
-        }
-        
-        // 初始化行程
-        function initializeItinerary() {
-            // 设置默认日期为今天和6天后
-            const today = new Date();
-            const endDate = new Date();
-            endDate.setDate(today.getDate() + 6);
+        itineraryData.forEach((day, index) => {
+            day.day = index + 1;
             
-            // 格式化为YYYY-MM-DD格式
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-            
-            // 设置日期输入框的值
-            document.getElementById('start-date').value = formatDate(today);
-            document.getElementById('end-date').value = formatDate(endDate);
-            
-            // 初始只有1天行程
-            addDay();
-        }
-        
-        // 初始化乘客
-        function initializePassengers() {
-            passengers = [
-                { id: 1, name: "新乘客", countryCode: "+86", phone: "" }
-            ];
-            renderPassengers();
-        }
-        
-        // 添加一天行程
-        function addDay() {
-            const dayNum = itineraryData.length + 1;
-            const startDateInput = document.getElementById('start-date').value;
-            const startDate = new Date(startDateInput);
-            
-            // 检查日期是否有效
-            if (isNaN(startDate.getTime())) {
-                alert("请先选择有效的开始日期");
-                return;
-            }
-            
-            // 计算当天的日期
             const dayDate = new Date(startDate);
-            dayDate.setDate(startDate.getDate() + dayNum - 1);
+            dayDate.setDate(startDate.getDate() + day.day - 1);
             
             const month = dayDate.getMonth() + 1;
             const date = dayDate.getDate();
-            
-            itineraryData.push({
-                day: dayNum,
-                date: `${month}月${date}日`,
-                plan: "自定义行程",
-                planPrice: 0,
-                accommodation: "自定义住宿",
-                accommodationPrice: 0,
-                guideService: false // 默认不选择导游服务
-            });
+            day.date = `${month}月${date}日`;
+        });
+    }
+    
+    // 删除特定天数
+    function removeDay(index) {
+        if (itineraryData.length > 1) {
+            itineraryData.splice(index, 1);
+            updateDayNumbers();
             renderItinerary();
+        } else {
+            alert("至少需要保留一天的行程");
+        }
+    }
+    
+    // 选择车型
+    function selectCar(type) {
+        selectedCar = type;
+        
+        // 更新UI显示
+        document.querySelectorAll('.car-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        document.getElementById(`${type}-car`).classList.add('selected');
+        
+        // 显示/隐藏多座车输入框
+        const multiSeatInput = document.getElementById('multi-seat-input');
+        if (type === 'multi-seat') {
+            multiSeatInput.style.display = 'block';
+            if (multiSeatInput.value === '0') multiSeatInput.value = '';
+        } else {
+            multiSeatInput.style.display = 'none';
         }
         
-        // 删除特定天数
-        function removeDay(index) {
-            if (itineraryData.length > 1) {
-                itineraryData.splice(index, 1);
-                updateDayNumbers();
-                renderItinerary();
-            } else {
-                alert("至少需要保留一天的行程");
-            }
+        // 更新车型显示
+        let carTypeText = '';
+        switch(type) {
+            case '5-seat':
+                carTypeText = '5座车';
+                break;
+            case '7-seat':
+                carTypeText = '7座车';
+                break;
+            case 'multi-seat':
+                carTypeText = multiSeatCount > 0 ? `${multiSeatCount}座车` : '多座车';
+                break;
+        }
+        document.getElementById('car-type-display').textContent = carTypeText;
+        
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 更新多座车座位数
+    function updateMultiSeatCount() {
+        const input = document.getElementById('multi-seat-input');
+        multiSeatCount = parseInt(input.value) || 0;
+        document.getElementById('car-type-display').textContent = multiSeatCount > 0 ? `${multiSeatCount}座车` : '多座车';
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 切换换车服务
+    function toggleCarChangeService() {
+        const checkbox = document.getElementById('car-change-checkbox');
+        const priceInput = document.getElementById('car-change-price');
+        
+        carChangeEnabled = checkbox.checked;
+        priceInput.disabled = !carChangeEnabled;
+        
+        if (!carChangeEnabled) {
+            carChangePrice = 0;
+            priceInput.value = 0;
+        } else {
+            carChangePrice = parseInt(priceInput.value) || 100;
         }
         
-        // 更新天数编号
-        function updateDayNumbers() {
-            const startDateInput = document.getElementById('start-date').value;
-            const startDate = new Date(startDateInput);
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 更新换车服务价格
+    function updateCarChangePrice() {
+        const priceInput = document.getElementById('car-change-price');
+        carChangePrice = parseInt(priceInput.value) || 0;
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 选择导游类型
+    function selectGuide(type) {
+        selectedGuide = type;
+        
+        // 更新UI显示
+        document.querySelectorAll('.guide-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        document.getElementById(`${type}-guide`).classList.add('selected');
+        
+        // 启用/禁用行程表中的导游选择框
+        const checkboxes = document.querySelectorAll('.guide-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.disabled = type === 'no';
+        });
+        
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 更新导游价格
+    function updateGuidePrice() {
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 更新附加服务
+    function updateExtraService(serviceId) {
+        const service = extraServices.find(s => s.id === serviceId);
+        if (service) {
+            service.checked = document.getElementById(serviceId).checked;
+            calculateTotal();
+            updateOutput();
+        }
+    }
+    
+    // 更新服务名称
+    function updateExtraServiceName(serviceId, newName) {
+        const service = extraServices.find(s => s.id === serviceId);
+        if (service) {
+            service.name = newName;
+            calculateTotal();
+            updateOutput();
+        }
+    }
+    
+    // 更新服务日期
+    function updateExtraServiceDate(serviceId, date) {
+        const service = extraServices.find(s => s.id === serviceId);
+        if (service) {
+            service.date = date;
+            calculateTotal();
+            updateOutput();
+        }
+    }
+    
+    // 更新服务费用
+    function updateCost(serviceId) {
+        const service = extraServices.find(s => s.id === serviceId);
+        if (service) {
+            const priceInput = document.getElementById(`${serviceId}-price`);
+            service.price = parseFloat(priceInput.value) || 0;
             
-            if (isNaN(startDate.getTime())) {
-                alert("请选择有效的开始日期");
+            const unitInput = document.getElementById(`${serviceId}-unit`);
+            if (unitInput) {
+                service.unit = unitInput.value;
+            }
+            
+            calculateTotal();
+            updateOutput();
+        }
+    }
+    
+    // 添加新服务
+    function addNewService() {
+        serviceCounter++;
+        const newId = `service-${serviceCounter}`;
+        const newService = {
+            id: newId,
+            name: '新附加服务',
+            price: 0,
+            unit: '',
+            date: '',
+            checked: false
+        };
+        extraServices.push(newService);
+        
+        const newServiceElement = document.createElement('div');
+        newServiceElement.className = 'extra-service-item';
+        newServiceElement.id = `${newId}-service`;
+        newServiceElement.innerHTML = `
+            <div class="extra-service-name">
+                <input type="checkbox" id="${newId}" class="extra-service-checkbox" onchange="updateExtraService('${newId}')">
+                <input type="text" class="editable" value="新附加服务" onblur="updateExtraServiceName('${newId}', this.value)">
+            </div>
+            <div class="extra-service-price">
+                <input type="number" class="price-input" value="0" min="0" onchange="updateCost('${newId}')" id="${newId}-price"> USD
+                <input type="text" class="unit-input" placeholder="/单位" onblur="updateCost('${newId}')" id="${newId}-unit">
+                <input type="date" class="extra-service-date" onchange="updateExtraServiceDate('${newId}', this.value)">
+                <button class="remove-btn" onclick="removeService('${newId}')">×</button>
+            </div>
+        `;
+        document.getElementById('extra-services').appendChild(newServiceElement);
+    }
+    
+    // 移除服务
+    function removeService(serviceId) {
+        extraServices = extraServices.filter(s => s.id !== serviceId);
+        const serviceElement = document.getElementById(`${serviceId}-service`);
+        if (serviceElement) {
+            serviceElement.remove();
+        }
+        calculateTotal();
+        updateOutput();
+    }
+    
+    // 添加乘客
+    function addPassenger() {
+        const newId = passengers.length > 0 ? Math.max(...passengers.map(p => p.id)) + 1 : 1;
+        passengers.push({
+            id: newId,
+            name: "新乘客",
+            countryCode: "+86",
+            phone: "未提供"
+        });
+        renderPassengers();
+    }
+    
+    // 删除乘客
+    function removePassenger(index) {
+        if (passengers.length > 1) {
+            passengers.splice(index, 1);
+            renderPassengers();
+        } else {
+            alert("至少需要保留一位乘客");
+        }
+    }
+    
+    // 更新乘客信息
+    function updatePassenger(index, field, value) {
+        if (field === 'phone') {
+            if (!/^\d*$/.test(value)) {
+                alert("电话号码只能包含数字");
                 return;
             }
-            
-            itineraryData.forEach((day, index) => {
-                day.day = index + 1;
-                
-                const dayDate = new Date(startDate);
-                dayDate.setDate(startDate.getDate() + day.day - 1);
-                
-                const month = dayDate.getMonth() + 1;
-                const date = dayDate.getDate();
-                day.date = `${month}月${date}日`;
-            });
-        }
-        
-        // 渲染行程表格
-        function renderItinerary() {
-            const itineraryBody = document.getElementById('itinerary-body');
-            itineraryBody.innerHTML = '';
-            
-            itineraryData.forEach((day, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${day.day}</td>
-                    <td>
-                        <span class="editable" contenteditable="true" onblur="updateDayData(${index}, 'date', this.textContent)">${day.date}</span>
-                        <div class="day-actions">
-                            <button class="action-btn move-up" onclick="moveDayUp(${index})" ${index === 0 ? 'disabled' : ''}><i class="fas fa-arrow-up"></i></button>
-                            <button class="action-btn move-down" onclick="moveDayDown(${index})" ${index === itineraryData.length - 1 ? 'disabled' : ''}><i class="fas fa-arrow-down"></i></button>
-                            <button class="action-btn delete" onclick="removeDay(${index})"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                    <td class="editable" contenteditable="true" onblur="updateDayData(${index}, 'plan', this.textContent)">${day.plan}</td>
-                    <td>
-                        <input type="number" class="price-input" value="${day.planPrice}" min="0" onchange="updateDayData(${index}, 'planPrice', this.value)" id="day${day.day}-travel-price"> USD
-                        <div class="price-display" id="day${day.day}-travel-display">${day.planPrice}</div>
-                    </td>
-                    <td class="editable" contenteditable="true" onblur="updateDayData(${index}, 'accommodation', this.textContent)">${day.accommodation}</td>
-                    <td>
-                        <input type="number" class="price-input" value="${day.accommodationPrice}" min="0" onchange="updateDayData(${index}, 'accommodationPrice', this.value)" id="day${day.day}-hotel-price"> USD
-                        <div class="price-display" id="day${day.day}-hotel-display">${day.accommodationPrice}</div>
-                    </td>
-                    <td>
-                        <input type="checkbox" class="guide-checkbox" ${day.guideService ? 'checked' : ''} 
-                               onchange="updateDayGuideService(${index}, this.checked)"
-                               ${selectedGuide === 'no' ? 'disabled' : ''}>
-                    </td>
-                `;
-                itineraryBody.appendChild(row);
-            });
-            
-            // 重新计算费用
-            calculateTotal();
-        }
-        
-        // 更新行程数据
-        function updateDayData(index, field, value) {
-            itineraryData[index][field] = value;
-            calculateTotal();
-        }
-        
-        // 更新导游服务选择
-        function updateDayGuideService(index, isChecked) {
-            itineraryData[index].guideService = isChecked;
-            updateSelectedGuideDays();
-            calculateTotal();
-        }
-        
-        // 更新选择的导游天数
-        function updateSelectedGuideDays() {
-            selectedGuideDays = [];
-            itineraryData.forEach(day => {
-                if (day.guideService) {
-                    selectedGuideDays.push(day.day);
-                }
-            });
-        }
-        
-        // 移动行程向上
-        function moveDayUp(index) {
-            if (index > 0) {
-                const temp = itineraryData[index];
-                itineraryData[index] = itineraryData[index - 1];
-                itineraryData[index - 1] = temp;
-                updateDayNumbers();
-                renderItinerary();
+            // 如果电话为空，设置默认值
+            if (value.trim() === '') {
+                value = '未提供';
             }
         }
         
-        // 移动行程向下
-        function moveDayDown(index) {
-            if (index < itineraryData.length - 1) {
-                const temp = itineraryData[index];
-                itineraryData[index] = itineraryData[index + 1];
-                itineraryData[index + 1] = temp;
-                updateDayNumbers();
-                renderItinerary();
-            }
-        }
+        passengers[index][field] = value;
+        updateOutput();
+    }
+    
+    // 渲染乘客列表
+    function renderPassengers() {
+        const passengerList = document.getElementById('passenger-list');
+        if (!passengerList) return;
         
-        // 选择车型
-        function selectCar(type) {
-            selectedCar = type;
-            
-            // 更新UI显示
-            document.querySelectorAll('.car-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            document.getElementById(`${type}-car`).classList.add('selected');
-            
-            // 显示/隐藏多座车输入框
-            const multiSeatInput = document.getElementById('multi-seat-input');
-            if (type === 'multi-seat') {
-                multiSeatInput.style.display = 'block';
-                multiSeatInput.focus();
-            } else {
-                multiSeatInput.style.display = 'none';
-            }
-            
-            // 更新车型显示
-            let carTypeText = '';
-            switch(type) {
-                case '5-seat':
-                    carTypeText = '5座车';
-                    break;
-                case '7-seat':
-                    carTypeText = '7座车';
-                    break;
-                case 'multi-seat':
-                    carTypeText = multiSeatCount > 0 ? `${multiSeatCount}座车` : '多座车';
-                    break;
-            }
-            document.getElementById('car-type-display').textContent = carTypeText;
-            
-            // 更新费用
-            calculateTotal();
-        }
+        passengerList.innerHTML = '';
         
-        // 更新多座车座位数
-        function updateMultiSeatCount() {
-            const input = document.getElementById('multi-seat-input');
-            multiSeatCount = parseInt(input.value) || 0;
-            document.getElementById('car-type-display').textContent = multiSeatCount > 0 ? `${multiSeatCount}座车` : '多座车';
-            calculateTotal();
-        }
-        
-        // 切换换车服务
-        function toggleCarChangeService() {
-            const checkbox = document.getElementById('car-change-checkbox');
-            const priceInput = document.getElementById('car-change-price');
-            
-            carChangeEnabled = checkbox.checked;
-            priceInput.disabled = !carChangeEnabled;
-            
-            if (!carChangeEnabled) {
-                carChangePrice = 0;
-                priceInput.value = 0;
-            } else {
-                carChangePrice = parseInt(priceInput.value) || 100;
-                priceInput.value = carChangePrice;
-            }
-            
-            calculateTotal();
-        }
-        
-        // 更新换车服务价格
-        function updateCarChangePrice() {
-            const priceInput = document.getElementById('car-change-price');
-            carChangePrice = parseInt(priceInput.value) || 0;
-            calculateTotal();
-        }
-        
-        // 选择导游类型
-        function selectGuide(type) {
-            selectedGuide = type;
-            
-            // 更新UI显示
-            document.querySelectorAll('.guide-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            document.getElementById(`${type}-guide`).classList.add('selected');
-            
-            // 启用/禁用行程表中的导游选择框
-            const checkboxes = document.querySelectorAll('.guide-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.disabled = type === 'no';
-            });
-            
-            // 更新费用
-            calculateTotal();
-        }
-        
-        // 更新导游价格
-        function updateGuidePrice() {
-            calculateTotal();
-        }
-        
-        // 更新附加服务
-        function updateExtraService(serviceId) {
-            const service = extraServices.find(s => s.id === serviceId);
-            if (service) {
-                service.checked = document.getElementById(serviceId).checked;
-                calculateTotal();
-            }
-        }
-        
-        // 更新服务费用
-        function updateCost(serviceId) {
-            const service = extraServices.find(s => s.id === serviceId);
-            if (service) {
-                const priceInput = document.getElementById(`${serviceId}-price`);
-                service.price = parseFloat(priceInput.value) || 0;
-                
-                const unitInput = document.getElementById(`${serviceId}-unit`);
-                if (unitInput) {
-                    service.unit = unitInput.value;
-                }
-                
-                calculateTotal();
-            }
-        }
-        
-        // 添加新服务
-        function addNewService() {
-            serviceCounter++;
-            const newId = `service-${serviceCounter}`;
-            const newService = {
-                id: newId,
-                name: '新附加服务',
-                price: 0,
-                unit: '',
-                checked: false
-            };
-            extraServices.push(newService);
-            
-            const newServiceElement = document.createElement('div');
-            newServiceElement.className = 'extra-service-item';
-            newServiceElement.id = `${newId}-service`;
-            newServiceElement.innerHTML = `
-                <div class="extra-service-name">
-                    <input type="checkbox" id="${newId}" class="extra-service-checkbox" onchange="updateExtraService('${newId}')">
-                    <label for="${newId}">新附加服务</label>
+        passengers.forEach((passenger, index) => {
+            const passengerItem = document.createElement('div');
+            passengerItem.className = 'passenger-item';
+            passengerItem.innerHTML = `
+                <span class="passenger-number">${index + 1}、</span>
+                <span>姓名:</span>
+                <input type="text" class="editable" value="${passenger.name}" onblur="updatePassenger(${index}, 'name', this.value)">
+                <span>电话:</span>
+                <div class="phone-input">
+                    <select class="country-code" onchange="updatePassenger(${index}, 'countryCode', this.value)">
+                        ${countryCodes.map(code => `
+                            <option value="${code.code}" ${passenger.countryCode === code.code ? 'selected' : ''}>
+                                ${code.code}
+                            </option>
+                        `).join('')}
+                    </select>
+                    <input type="text" class="phone-number" value="${passenger.phone}" 
+                           onblur="updatePassenger(${index}, 'phone', this.value)">
                 </div>
-                <div class="extra-service-price">
-                    <input type="number" class="price-input" value="0" min="0" onchange="updateCost('${newId}')" id="${newId}-price"> USD
-                    <input type="text" class="unit-input" placeholder="/单位" id="${newId}-unit">
-                    <button class="remove-btn" onclick="removeService('${newId}')"><i class="fas fa-times"></i></button>
+                <div class="passenger-actions">
+                    <button class="action-btn delete" onclick="removePassenger(${index})">×</button>
                 </div>
             `;
-            document.getElementById('extra-services').appendChild(newServiceElement);
-        }
+            passengerList.appendChild(passengerItem);
+        });
         
-        // 移除服务
-        function removeService(serviceId) {
-            extraServices = extraServices.filter(s => s.id !== serviceId);
-            const serviceElement = document.getElementById(`${serviceId}-service`);
-            if (serviceElement) {
-                serviceElement.remove();
-            }
-            calculateTotal();
-        }
+        document.getElementById('passenger-count').textContent = passengers.length;
+        updateOutput();
+    }
+    
+    // 计算总价的函数
+    function calculateTotal() {
+        // 计算交通费用
+        let travelTotal = 0;
+        itineraryData.forEach(day => {
+            travelTotal += parseFloat(day.planPrice) || 0;
+        });
         
-        // 添加乘客
-        function addPassenger() {
-            const newId = passengers.length > 0 ? Math.max(...passengers.map(p => p.id)) + 1 : 1;
-            passengers.push({
-                id: newId,
-                name: "新乘客",
-                countryCode: "+86",
-                phone: ""
-            });
-            renderPassengers();
-        }
-        
-        // 删除乘客
-        function removePassenger(index) {
-            if (passengers.length > 1) {
-                passengers.splice(index, 1);
-                renderPassengers();
-            } else {
-                alert("至少需要保留一位乘客");
-            }
-        }
-        
-        // 更新乘客信息
-        function updatePassenger(index, field, value) {
-            if (field === 'phone') {
-                if (!/^\d*$/.test(value)) {
-                    alert("电话号码只能包含数字");
-                    return;
+        // 根据车型调整价格
+        switch(selectedCar) {
+            case '5-seat':
+                break;
+            case '7-seat':
+                travelTotal += 50 * itineraryData.length;
+                break;
+            case 'multi-seat':
+                if (multiSeatCount > 0) {
+                    travelTotal += 80 * itineraryData.length;
                 }
-            }
-            
-            passengers[index][field] = value;
+                break;
         }
         
-        // 渲染乘客列表
-        function renderPassengers() {
-            const passengerList = document.getElementById('passenger-list');
-            passengerList.innerHTML = '';
-            
-            passengers.forEach((passenger, index) => {
-                const passengerItem = document.createElement('div');
-                passengerItem.className = 'passenger-item';
-                passengerItem.innerHTML = `
-                    <span class="passenger-number">${index + 1}、</span>
-                    <span>姓名:</span>
-                    <span class="editable" contenteditable="true" onblur="updatePassenger(${index}, 'name', this.textContent)">${passenger.name}</span>
-                    <span>电话:</span>
-                    <div class="phone-input">
-                        <select class="country-code" onchange="updatePassenger(${index}, 'countryCode', this.value)">
-                            ${countryCodes.map(code => `
-                                <option value="${code.code}" ${passenger.countryCode === code.code ? 'selected' : ''}>
-                                    ${code.code} (${code.name})
-                                </option>
-                            `).join('')}
-                        </select>
-                        <input type="text" class="phone-number" value="${passenger.phone}" 
-                               onblur="updatePassenger(${index}, 'phone', this.value)" 
-                               pattern="\d*" title="电话号码只能包含数字">
-                    </div>
-                    <div class="passenger-actions">
-                        <button class="action-btn delete" onclick="removePassenger(${index})"><i class="fas fa-trash"></i></button>
-                    </div>
-                `;
-                passengerList.appendChild(passengerItem);
-            });
-            
-            document.getElementById('passenger-count').textContent = passengers.length;
-            calculateTotal();
+        // 换车服务费用
+        if (carChangeEnabled) {
+            travelTotal += carChangePrice;
         }
         
-        // 计算总价的函数
-        function calculateTotal() {
-            // 计算交通费用
-            let travelTotal = 0;
-            itineraryData.forEach(day => {
-                travelTotal += parseFloat(day.planPrice) || 0;
-            });
-            
-            // 根据车型调整价格
-            switch(selectedCar) {
-                case '5-seat':
-                    break;
-                case '7-seat':
-                    travelTotal += 50 * itineraryData.length;
-                    break;
-                case 'multi-seat':
-                    if (multiSeatCount > 0) {
-                        travelTotal += 80 * itineraryData.length;
-                    }
-                    break;
+        document.getElementById('travel-total').textContent = travelTotal;
+        
+        // 计算住宿费用
+        let hotelTotal = 0;
+        itineraryData.forEach(day => {
+            hotelTotal += parseFloat(day.accommodationPrice) || 0;
+        });
+        document.getElementById('hotel-total').textContent = hotelTotal;
+        
+        // 计算导游费用
+        let guideTotal = 0;
+        if (selectedGuide === 'chinese') {
+            const pricePerDay = parseFloat(document.getElementById('chinese-guide-price').value) || 0;
+            guideTotal = pricePerDay * selectedGuideDays.length;
+        } else if (selectedGuide === 'english') {
+            const pricePerDay = parseFloat(document.getElementById('english-guide-price').value) || 0;
+            guideTotal = pricePerDay * selectedGuideDays.length;
+        }
+        document.getElementById('guide-total').textContent = guideTotal;
+        
+        // 计算附加服务费用
+        let extraTotal = 0;
+        extraServices.forEach(service => {
+            if (service.checked) {
+                extraTotal += service.price;
             }
-            
-            // 换车服务费用
-            if (carChangeEnabled) {
-                travelTotal += carChangePrice;
-            }
-            
-            document.getElementById('travel-total').textContent = travelTotal;
-            
-            // 计算住宿费用
-            let hotelTotal = 0;
-            itineraryData.forEach(day => {
-                hotelTotal += parseFloat(day.accommodationPrice) || 0;
-            });
-            document.getElementById('hotel-total').textContent = hotelTotal;
-            
-            // 计算导游费用
-            let guideTotal = 0;
-            if (selectedGuide === 'chinese') {
-                const pricePerDay = parseFloat(document.getElementById('chinese-guide-price').value) || 0;
-                guideTotal = pricePerDay * selectedGuideDays.length;
-            } else if (selectedGuide === 'english') {
-                const pricePerDay = parseFloat(document.getElementById('english-guide-price').value) || 0;
-                guideTotal = pricePerDay * selectedGuideDays.length;
-            }
-            document.getElementById('guide-total').textContent = guideTotal;
-            
-            // 计算附加服务费用
-            let extraTotal = 0;
-            extraServices.forEach(service => {
-                if (service.checked) {
-                    extraTotal += service.price;
+        });
+        document.getElementById('extra-total').textContent = extraTotal;
+        
+        // 计算总计
+        const total = travelTotal + hotelTotal + guideTotal + extraTotal;
+        document.getElementById('total-price').textContent = total;
+    }
+    
+    // 更新输出内容的函数
+    function updateOutput() {
+        const outputContent = document.getElementById('output-content');
+        if (!outputContent) return;
+        
+        // 获取所有数据
+        const serviceType = document.getElementById('service-type').value;
+        const startDateInput = document.getElementById('start-date').value;
+        const endDateInput = document.getElementById('end-date').value;
+        
+        if (!startDateInput || !endDateInput) {
+            outputContent.textContent = "请先选择开始和结束日期";
+            return;
+        }
+        
+        const startDate = new Date(startDateInput);
+        const endDate = new Date(endDateInput);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            outputContent.textContent = "日期格式无效，请重新选择";
+            return;
+        }
+        
+        const startMonth = startDate.getMonth() + 1;
+        const startDay = startDate.getDate();
+        const endMonth = endDate.getMonth() + 1;
+        const endDay = endDate.getDate();
+        
+        const travelDate = `${startMonth}月${startDay}日-${endMonth}月${endDay}日`;
+        
+        const arrivalTime = document.getElementById('arrival-time').value;
+        const flightNumber = document.getElementById('flight-number').value || "无";
+        
+        // 获取车型
+        let carType = '';
+        switch(selectedCar) {
+            case '5-seat':
+                carType = '5座车';
+                break;
+            case '7-seat':
+                carType = '7座车';
+                break;
+            case 'multi-seat':
+                carType = multiSeatCount > 0 ? `${multiSeatCount}座车` : '多座车';
+                break;
+        }
+        
+        const hotelStandard = document.getElementById('hotel-standard').value;
+        const roomType = document.getElementById('room-type').value;
+        const passengerCount = passengers.length;
+        
+        // 获取行程数据
+        let itineraryText = '';
+        itineraryData.forEach(day => {
+            itineraryText += `第${day.day}天（${day.date}）：${day.plan} [报价:${day.planPrice}USD]\n`;
+            itineraryText += `住宿：${day.accommodation} [报价:${day.accommodationPrice}USD]\n`;
+            itineraryText += `导游服务：${day.guideService ? '是' : '否'}\n\n`;
+        });
+        
+        if (itineraryText === '') {
+            itineraryText = "暂无行程安排\n\n";
+        }
+        
+        // 获取导游信息
+        let guideText = "无需导游";
+        let guidePrice = 0;
+        
+        if (selectedGuide !== 'no') {
+            const pricePerDay = parseFloat(document.getElementById(`${selectedGuide}-guide-price`).value) || 0;
+            guidePrice = pricePerDay * selectedGuideDays.length;
+            guideText = selectedGuide === 'chinese' ? "中文导游" : "英文导游";
+            guideText += ` (${selectedGuideDays.length}天, ${pricePerDay}USD/天)`;
+        }
+        
+        // 获取附加服务
+        let extraServicesText = '';
+        extraServices.forEach(service => {
+            if (service.checked) {
+                let serviceLine = `${service.name}: ${service.price}USD${service.unit}`;
+                if (service.date) {
+                    const serviceDate = new Date(service.date);
+                    const month = serviceDate.getMonth() + 1;
+                    const day = serviceDate.getDate();
+                    serviceLine += ` (${month}月${day}日)`;
                 }
-            });
-            document.getElementById('extra-total').textContent = extraTotal;
-            
-            // 计算总计
-            const total = travelTotal + hotelTotal + guideTotal + extraTotal;
-            document.getElementById('total-price').textContent = total;
+                extraServicesText += serviceLine + '\n';
+            }
+        });
+        
+        if (extraServicesText === '') {
+            extraServicesText = "无\n";
         }
         
-        // 更新输出内容的函数
-        function updateOutput() {
-            // 获取所有数据
-            const serviceType = document.getElementById('service-type').value;
-            
-            // 获取日期
-            const startDate = new Date(document.getElementById('start-date').value);
-            const endDate = new Date(document.getElementById('end-date').value);
-            
-            const startMonth = startDate.getMonth() + 1;
-            const startDay = startDate.getDate();
-            const endMonth = endDate.getMonth() + 1;
-            const endDay = endDate.getDate();
-            
-            const travelDate = `${startMonth}月${startDay}日-${endMonth}月${endDay}日`;
-            
-            // 获取时间
-            const arrivalTime = document.getElementById('arrival-time').value;
-            
-            const flightNumber = document.getElementById('flight-number').value;
-            
-            // 获取车型
-            let carType = '';
-            switch(selectedCar) {
-                case '5-seat':
-                    carType = '5座车';
-                    break;
-                case '7-seat':
-                    carType = '7座车';
-                    break;
-                case 'multi-seat':
-                    carType = multiSeatCount > 0 ? `${multiSeatCount}座车` : '多座车';
-                    break;
-            }
-            
-            const hotelStandard = document.getElementById('hotel-standard').value;
-            const roomType = document.getElementById('room-type').value;
-            const passengerCount = passengers.length;
-            
-            // 获取行程数据
-            let itineraryText = '';
-            itineraryData.forEach(day => {
-                itineraryText += `day${day.day}：${day.plan} [报价:${day.planPrice}USD]\n住宿：${day.accommodation} [报价:${day.accommodationPrice}USD]\n`;
-            });
-            
-            // 获取导游信息
-            let guideText = "无需导游";
-            let guidePrice = 0;
-            
-            if (selectedGuide !== 'no') {
-                const pricePerDay = parseFloat(document.getElementById(`${selectedGuide}-guide-price`).value) || 0;
-                guidePrice = pricePerDay * selectedGuideDays.length;
-                guideText = selectedGuide === 'chinese' ? "中文导游" : "英文导游";
-                guideText += ` (${selectedGuideDays.length}天, ${pricePerDay}USD/天)`;
-            }
-            
-            // 获取附加服务
-            let extraServicesText = '';
-            extraServices.forEach(service => {
-                if (service.checked) {
-                    extraServicesText += `${service.name}: ${service.price}USD${service.unit}\n`;
-                }
-            });
-            
-            if (extraServicesText === '') {
-                extraServicesText = "无\n";
-            }
-            
-            // 换车服务
-            if (carChangeEnabled && carChangePrice > 0) {
-                extraServicesText += `换车服务: ${carChangePrice}USD\n`;
-            }
-            
-            // 获取乘客信息
-            let passengerText = '';
-            passengers.forEach((passenger, index) => {
-                passengerText += `${index + 1}、姓名:${passenger.name} 电话:${passenger.countryCode}-${passenger.phone}\n`;
-            });
-            
-            // 获取费用汇总
-            const travelTotal = document.getElementById('travel-total').textContent;
-            const hotelTotal = document.getElementById('hotel-total').textContent;
-            const guideTotal = document.getElementById('guide-total').textContent;
-            const extraTotal = document.getElementById('extra-total').textContent;
-            const totalPrice = document.getElementById('total-price').textContent;
-            
-            // 构建输出文本
-            let outputText = `服务类型：${serviceType}
+        // 换车服务
+        if (carChangeEnabled && carChangePrice > 0) {
+            extraServicesText += `换车服务: ${carChangePrice}USD\n`;
+        }
+        
+        // 获取乘客信息
+        let passengerText = '';
+        passengers.forEach((passenger, index) => {
+            passengerText += `${index + 1}、姓名:${passenger.name} 电话:${passenger.countryCode}-${passenger.phone}\n`;
+        });
+        
+        if (passengerText === '') {
+            passengerText = "暂无乘客信息\n";
+        }
+        
+        // 获取费用汇总
+        const travelTotal = document.getElementById('travel-total').textContent;
+        const hotelTotal = document.getElementById('hotel-total').textContent;
+        const guideTotal = document.getElementById('guide-total').textContent;
+        const extraTotal = document.getElementById('extra-total').textContent;
+        const totalPrice = document.getElementById('total-price').textContent;
+        
+        // 构建输出文本
+        let outputText = `服务类型：${serviceType}
 预计出行日期（当地时间）：${travelDate}
-抵达时间： ${arrivalTime}
-航班号： ${flightNumber}
-行程：
-${itineraryText}服务车型：${carType}
+抵达时间：${arrivalTime}
+航班号：${flightNumber}
+
+行程安排：
+${itineraryText}
+服务车型：${carType}
 酒店标准：${hotelStandard}
 房型：${roomType}
 乘客人数：${passengerCount}
@@ -1461,29 +1540,68 @@ ${extraServicesText}
 
 乘客信息：
 ${passengerText}`;
-            
-            document.getElementById('output-content').textContent = outputText;
-        }
         
-        // 复制到剪贴板的函数
-        function copyToClipboard() {
-            const outputText = document.getElementById('output-content').textContent;
+        outputContent.textContent = outputText;
+    }
+    
+    // 复制到剪贴板的函数
+    function copyToClipboard() {
+        try {
+            const outputContent = document.getElementById('output-content');
+            if (!outputContent) {
+                alert('找不到输出内容区域');
+                return;
+            }
+            
+            const outputText = outputContent.textContent;
+            if (!outputText || outputText.trim() === '') {
+                alert('请先生成内容');
+                return;
+            }
+            
             navigator.clipboard.writeText(outputText).then(() => {
                 alert('内容已复制到剪贴板！');
             }).catch(err => {
-                console.error('无法复制文本: ', err);
+                console.error('复制失败:', err);
+                // 降级方案
+                const textArea = document.createElement('textarea');
+                textArea.value = outputText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('内容已复制到剪贴板！');
             });
+            
+        } catch (error) {
+            console.error('复制失败:', error);
+            alert('复制失败: ' + error.message);
         }
-        
-        // 下载为文件的函数
-        function downloadAsFile() {
-            const outputText = document.getElementById('output-content').textContent;
-            const blob = new Blob([outputText], { type: 'text/plain' });
+    }
+    
+    // 下载为文件的函数
+    function downloadAsFile() {
+        try {
+            const outputContent = document.getElementById('output-content');
+            if (!outputContent) {
+                alert('找不到输出内容');
+                return;
+            }
+            
+            const outputText = outputContent.textContent;
+            if (!outputText || outputText.trim() === '') {
+                alert('请先生成内容');
+                return;
+            }
+            
+            const blob = new Blob([outputText], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
             a.href = url;
             a.download = '格鲁吉亚行程报价单.txt';
+            a.style.display = 'none';
+            
             document.body.appendChild(a);
             a.click();
             
@@ -1491,80 +1609,102 @@ ${passengerText}`;
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 100);
+            
+            alert('文件下载成功！');
+            
+        } catch (error) {
+            console.error('下载失败:', error);
+            alert('下载失败: ' + error.message);
+        }
+    }
+    
+    // 保存到Supabase的函数
+    async function saveToSupabase() {
+        if (!supabase) {
+            if (!initSupabase()) {
+                showStatus('Supabase初始化失败', 'error');
+                return;
+            }
         }
         
-        // 保存到Supabase的函数
-        async function saveToSupabase() {
-            if (!supabase) {
-                if (!initSupabase()) {
-                    showStatus('Supabase初始化失败', 'error');
-                    return;
-                }
+        try {
+            // 收集基本数据 - 处理空值
+            const itineraryDataToSave = {
+                service_type: document.getElementById('service-type').value,
+                start_date: document.getElementById('start-date').value,
+                end_date: document.getElementById('end-date').value,
+                arrival_time: document.getElementById('arrival-time').value,
+                flight_number: document.getElementById('flight-number').value || "无",
+                car_type: document.getElementById('car-type-display').textContent,
+                hotel_standard: document.getElementById('hotel-standard').value,
+                room_type: document.getElementById('room-type').value,
+                guide_type: selectedGuide,
+                total_price: document.getElementById('total-price').textContent,
+                created_at: new Date().toISOString()
+            };
+
+            showStatus('正在保存数据...', 'success');
+
+            // 插入行程主记录
+            const { data: itinerary, error: itineraryError } = await supabase
+                .from('itineraries')
+                .insert([itineraryDataToSave])
+                .select()
+                .single();
+
+            if (itineraryError) throw itineraryError;
+
+            const itineraryId = itinerary.id;
+
+            // 保存行程天数
+            for (const day of itineraryData) {
+                const { error: dayError } = await supabase
+                    .from('itinerary_days')
+                    .insert({
+                        itinerary_id: itineraryId,
+                        day_number: day.day,
+                        date: day.date,
+                        plan: day.plan,
+                        plan_price: day.planPrice,
+                        accommodation: day.accommodation,
+                        accommodation_price: day.accommodationPrice,
+                        guide_service: day.guideService
+                    });
+
+                if (dayError) throw dayError;
             }
-            
-            try {
-                // 收集基本数据
-                const itineraryDataToSave = {
-                    service_type: document.getElementById('service-type').value,
-                    start_date: document.getElementById('start-date').value,
-                    end_date: document.getElementById('end-date').value,
-                    arrival_time: document.getElementById('arrival-time').value,
-                    flight_number: document.getElementById('flight-number').value,
-                    car_type: document.getElementById('car-type-display').textContent,
-                    hotel_standard: document.getElementById('hotel-standard').value,
-                    room_type: document.getElementById('room-type').value,
-                    guide_type: selectedGuide,
-                    total_price: document.getElementById('total-price').textContent,
-                    created_at: new Date().toISOString()
-                };
 
-                showStatus('正在保存数据...', 'success');
+            // 保存乘客信息 - 处理空电话号码
+            for (const passenger of passengers) {
+                const phone = passenger.phone.trim() === "" ? "未提供" : passenger.phone;
+                
+                const { error: passengerError } = await supabase
+                    .from('passengers')
+                    .insert({
+                        itinerary_id: itineraryId,
+                        name: passenger.name,
+                        country_code: passenger.countryCode,
+                        phone: phone
+                    });
 
-                // 插入行程主记录
-                const { data: itinerary, error: itineraryError } = await supabase
-                    .from('itineraries')
-                    .insert([itineraryDataToSave])
-                    .select()
-                    .single();
+                if (passengerError) throw passengerError;
+            }
 
-                if (itineraryError) throw itineraryError;
+            // 保存附加服务 - 只保存选中的服务
+            for (const service of extraServices) {
+                if (service.checked) {
+                    let serviceDate = null;
+                    if (service.date && service.date.trim() !== "") {
+                        try {
+                            const dateObj = new Date(service.date);
+                            if (!isNaN(dateObj.getTime())) {
+                                serviceDate = dateObj.toISOString().split('T')[0];
+                            }
+                        } catch (e) {
+                            console.warn('无效的服务日期:', service.date);
+                        }
+                    }
 
-                const itineraryId = itinerary.id;
-
-                // 保存行程天数
-                for (const day of itineraryData) {
-                    const { error: dayError } = await supabase
-                        .from('itinerary_days')
-                        .insert({
-                            itinerary_id: itineraryId,
-                            day_number: day.day,
-                            date: day.date,
-                            plan: day.plan,
-                            plan_price: day.planPrice,
-                            accommodation: day.accommodation,
-                            accommodation_price: day.accommodationPrice,
-                            guide_service: day.guideService
-                        });
-
-                    if (dayError) throw dayError;
-                }
-
-                // 保存乘客信息
-                for (const passenger of passengers) {
-                    const { error: passengerError } = await supabase
-                        .from('passengers')
-                        .insert({
-                            itinerary_id: itineraryId,
-                            name: passenger.name,
-                            country_code: passenger.countryCode,
-                            phone: passenger.phone
-                        });
-
-                    if (passengerError) throw passengerError;
-                }
-
-                // 保存附加服务
-                for (const service of extraServices) {
                     const { error: serviceError } = await supabase
                         .from('extra_services')
                         .insert({
@@ -1572,42 +1712,34 @@ ${passengerText}`;
                             service_name: service.name,
                             price: service.price,
                             unit: service.unit,
+                            service_date: serviceDate,
                             is_selected: service.checked
                         });
 
                     if (serviceError) throw serviceError;
                 }
-
-                showStatus(`数据保存成功！保存ID: ${itineraryId}`, 'success');
-                
-            } catch (error) {
-                console.error('保存错误:', error);
-                showStatus('保存失败: ' + error.message, 'error');
             }
+
+            showStatus(`数据保存成功！保存ID: ${itineraryId}`, 'success');
+            
+        } catch (error) {
+            console.error('保存错误:', error);
+            showStatus('保存失败: ' + error.message, 'error');
         }
+    }
+    
+    // 页面加载初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('页面加载完成，开始初始化...');
         
-        // 初始化
-        document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // 初始化行程和乘客
             initializeItinerary();
             initializePassengers();
+            
+            // 设置默认选项
             selectGuide('no');
             selectCar('7-seat');
-            
-            // 为多座车输入框添加事件监听
-            const multiSeatInput = document.getElementById('multi-seat-input');
-            if (multiSeatInput) {
-                multiSeatInput.addEventListener('blur', updateMultiSeatCount);
-            }
-            
-            // 为换车服务价格添加事件监听
-            document.getElementById('car-change-price').addEventListener('change', updateCarChangePrice);
-            
-            // 为电话号码输入框添加验证
-            document.querySelectorAll('.phone-number').forEach(input => {
-                input.addEventListener('input', function() {
-                    this.value = this.value.replace(/[^\d]/g, '');
-                });
-            });
             
             // 初始化Supabase
             initSupabase();
@@ -1615,14 +1747,16 @@ ${passengerText}`;
             // 计算初始总价
             calculateTotal();
             
-            // 初始更新输出
+            // 更新输出内容
             updateOutput();
             
-            // 为所有可编辑区域添加输入监听
-            document.querySelectorAll('.editable').forEach(item => {
-                item.addEventListener('blur', updateOutput);
-            });
-        });
-    </script>
+            console.log('初始化完成');
+            
+        } catch (error) {
+            console.error('初始化失败:', error);
+            alert('页面初始化失败: ' + error.message);
+        }
+    });
+</script>
 </body>
 </html>
