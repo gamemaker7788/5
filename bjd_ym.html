@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>格鲁吉亚行程数据卡片展示</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(to right, #2c3e50, #34495e);
+            color: white;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .filters {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .filter-item input, .filter-item select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            margin-right: 0.5rem;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .itinerary-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .itinerary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-id {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .card-section {
+            margin-bottom: 1rem;
+        }
+        
+        .card-section h3 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .info-item {
+            display: flex;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #555;
+            min-width: 80px;
+            margin-right: 0.5rem;
+        }
+        
+        .day-item {
+            background-color: #f8f9fa;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .passenger-item, .service-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .nav-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .nav-btn:hover:not(:disabled) {
+            background-color: #2980b9;
+        }
+        
+        .nav-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .card-counter {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #7f8c8d;
+            grid-column: 1 / -1;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 2rem;
+            color: #e74c3c;
+            grid-column: 1 / -1;
+        }
+        
+        .record-count {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-completed {
+            background-color: #f1f8e9;
+            color: #689f38;
+        }
+        
+        .status-pending {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .price-tag {
+            font-weight: 700;
+            color: #27ae60;
+        }
+        
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+            }
+            
+            .filter-item {
+                width: 100%;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        
+        <div class="record-count" id="record-count">0条记录</div>
+        
+        <div class="filters">
+            <div class="filter-item">
+                <label for="date-from">开始日期</label>
+                <input type="date" id="date-from" placeholder="无">
+            </div>
+            <div class="filter-item">
+                <label for="date-to">结束日期</label>
+                <input type="date" id="date-to" placeholder="无">
+            </div>
+            <div class="filter-item">
+                <label for="guide-type">导游类型</label>
+                <select id="guide-type">
+                    <option value="">全部</option>
+                    <option value="no">无需导游</option>
+                    <option value="chinese">中文导游</option>
+                    <option value="english">英文导游</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <button class="btn" onclick="loadItineraries()">
+                    <i class="fas fa-sync-alt"></i> 加载数据
+                </button>
+            </div>
+        </div>
+        
+        <div class="cards-container" id="cards-container">
+            <div class="loading" id="loading-message">
+                <i class="fas fa-spinner fa-spin"></i> 正在连接Supabase...
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prev-btn" onclick="prevPage()" disabled>
+                <i class="fas fa-chevron-left"></i> 上一页
+            </button>
+            <div class="card-counter">
+                第 <span id="current-page">1</span> 页 / 共 <span id="total-pages">1</span> 页
+            </div>
+            <button class="nav-btn" id="next-btn" onclick="nextPage()" disabled>
+                下一页 <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Supabase配置
+        const SUPABASE_URL = 'https://fezxhcmiefdbvqmhczut.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
+        
+        let supabase = null;
+        let itinerariesData = [];
+        let currentPage = 1;
+        const itemsPerPage = 3;
+
+        // 初始化Supabase
+        async function initSupabase() {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // 测试连接
+                const { data, error } = await supabase
+                    .from('itineraries')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) throw error;
+                
+                console.log('Supabase连接成功');
+                return true;
+                
+            } catch (error) {
+                console.error('Supabase连接失败:', error);
+                showError('Supabase连接失败: ' + error.message);
+                return false;
+            }
+        }
+
+        // 加载行程数据
+        async function loadItineraries() {
+            if (!supabase) {
+                if (!await initSupabase()) return;
+            }
+
+            try {
+                showLoading('正在加载数据...');
+                
+                const dateFrom = document.getElementById('date-from').value;
+                const dateTo = document.getElementById('date-to').value;
+                const guideType = document.getElementById('guide-type').value;
+                
+                let query = supabase
+                    .from('itineraries')
+                    .select(`
+                        *,
+                        itinerary_days (*),
+                        passengers (*),
+                        extra_services (*)
+                    `)
+                    .order('created_at', { ascending: false });
+
+                // 应用筛选条件
+                if (dateFrom) {
+                    query = query.gte('start_date', dateFrom);
+                }
+                
+                if (dateTo) {
+                    query = query.lte('end_date', dateTo);
+                }
+                
+                if (guideType) {
+                    query = query.eq('guide_type', guideType);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    if (error.code === 'PGRST301') {
+                        // 表不存在错误，使用模拟数据
+                        console.warn('表不存在，使用模拟数据');
+                        useMockData();
+                        return;
+                    }
+                    throw error;
+                }
+
+                itinerariesData = data || [];
+                updateRecordCount();
+                
+                if (itinerariesData.length === 0) {
+                    showMessage('没有找到相关记录');
+                    return;
+                }
+
+                currentPage = 1;
+                renderItineraryCards();
+                updateNavigation();
+
+            } catch (error) {
+                console.error('加载数据错误:', error);
+                showError('加载数据失败: ' + error.message);
+            }
+        }
+
+        // 使用模拟数据（当Supabase表不存在时）
+        function useMockData() {
+            const mockData = [
+                {
+                    id: 'demo-001',
+                    service_type: '格鲁吉亚7日游',
+                    start_date: null,
+                    end_date: null,
+                    flight_number: null,
+                    car_type: '7座商务车',
+                    guide_type: 'chinese',
+                    total_price: '1250',
+                    created_at: null,
+                    arrival_time: null,
+                    hotel_standard: null,
+                    room_type: null,
+                    itinerary_days: [
+                        {
+                            day_number: 1,
+                            date: null,
+                            plan: '抵达第比利斯，接机后入住酒店',
+                            plan_price: '50',
+                            accommodation: '第比利斯四星酒店',
+                            accommodation_price: '80',
+                            guide_service: true
+                        }
+                    ],
+                    passengers: [
+                        {
+                            name: '张先生',
+                            country_code: null,
+                            phone: null
+                        }
+                    ],
+                    extra_services: [
+                        {
+                            service_name: '机场接送',
+                            price: '10',
+                            unit: '/次',
+                            is_selected: true
+                        }
+                    ]
+                }
+            ];
+
+            itinerariesData = mockData;
+            updateRecordCount();
+            renderItineraryCards();
+            updateNavigation();
+        }
+
+        // 渲染行程卡片
+        function renderItineraryCards() {
+            const cardsContainer = document.getElementById('cards-container');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentItems = itinerariesData.slice(startIndex, endIndex);
+
+            if (currentItems.length === 0) {
+                showMessage('当前页面无数据');
+                return;
+            }
+
+            cardsContainer.innerHTML = currentItems.map(itinerary => `
+                <div class="itinerary-card">
+                    <div class="card-header">
+                        <h2>${itinerary.service_type || '无'}</h2>
+                        <span class="card-id">${itinerary.id || '无'}</span>
+                    </div>
+                    
+                    <div class="card-section">
+                        <h3>基本信息</h3>
+                        <div class="info-item">
+                            <span class="info-label">日期:</span>
+                            <span>${formatDate(itinerary.start_date)} - ${formatDate(itinerary.end_date)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">航班:</span>
+                            <span>${itinerary.flight_number || '无'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">抵达:</span>
+                            <span>${itinerary.arrival_time || '无'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">车型:</span>
+                            <span>${itinerary.car_type || '无'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">导游:</span>
+                            <span>${getGuideTypeText(itinerary.guide_type)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">酒店:</span>
+                            <span>${itinerary.hotel_standard || '无'} - ${itinerary.room_type || '无'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">总价:</span>
+                            <span class="price-tag">${itinerary.total_price || '0'} USD</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card-section">
+                        <h3>行程安排</h3>
+                        ${itinerary.itinerary_days?.length > 0 ? 
+                            itinerary.itinerary_days.map(day => `
+                                <div class="day-item">
+                                    <div class="day-header">第${day.day_number}天 (${day.date || '无日期'})</div>
+                                    <div>${day.plan || '无'}</div>
+                                    <div>住宿: ${day.accommodation || '无'} (${day.accommodation_price || '0'} USD)</div>
+                                    <div>导游服务: ${day.guide_service ? '是' : '否'}</div>
+                                </div>
+                            `).join('') : 
+                            '<p>无行程安排</p>'
+                        }
+                    </div>
+                    
+                    <div class="card-section">
+                        <h3>乘客信息</h3>
+                        ${itinerary.passengers?.length > 0 ? 
+                            itinerary.passengers.map(passenger => `
+                                <div class="passenger-item">
+                                    <span>${passenger.name || '无'}</span>
+                                    <span>${passenger.country_code || ''}-${passenger.phone || '无'}</span>
+                                </div>
+                            `).join('') : 
+                            '<p>无乘客信息</p>'
+                        }
+                    </div>
+                    
+                    <div class="card-section">
+                        <h3>附加服务</h3>
+                        ${itinerary.extra_services?.filter(s => s.is_selected).length > 0 ? 
+                            itinerary.extra_services.filter(s => s.is_selected).map(service => `
+                                <div class="service-item">
+                                    <span>${service.service_name || '无'}</span>
+                                    <span>${service.price || '0'} USD${service.unit || ''}</span>
+                                </div>
+                            `).join('') : 
+                            '<p>无附加服务</p>'
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 显示加载状态
+        function showLoading(message) {
+            document.getElementById('cards-container').innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> ${message}
+                </div>
+            `;
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            document.getElementById('cards-container').innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i> ${message}
+                </div>
+            `;
+        }
+
+        // 显示普通消息
+        function showMessage(message) {
+            document.getElementById('cards-container').innerHTML = `
+                <div class="loading">${message}</div>
+            `;
+        }
+
+        // 更新记录计数
+        function updateRecordCount() {
+            document.getElementById('record-count').textContent = `${itinerariesData.length}条记录`;
+        }
+
+        // 更新导航
+        function updateNavigation() {
+            const totalPages = Math.ceil(itinerariesData.length / itemsPerPage);
+            
+            document.getElementById('current-page').textContent = currentPage;
+            document.getElementById('total-pages').textContent = totalPages;
+            
+            document.getElementById('prev-btn').disabled = currentPage <= 1;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages;
+        }
+
+        // 上一页
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderItineraryCards();
+                updateNavigation();
+            }
+        }
+
+        // 下一页
+        function nextPage() {
+            const totalPages = Math.ceil(itinerariesData.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderItineraryCards();
+                updateNavigation();
+            }
+        }
+
+        // 获取导游类型文本
+        function getGuideTypeText(guideType) {
+            switch(guideType) {
+                case 'no': return '无需导游';
+                case 'chinese': return '中文导游';
+                case 'english': return '英文导游';
+                default: return guideType || '无';
+            }
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '无';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN');
+            } catch (e) {
+                return '无';
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置日期输入框为空
+            document.getElementById('date-from').value = '';
+            document.getElementById('date-to').value = '';
+            
+            // 初始化Supabase并加载数据
+            initSupabase().then(success => {
+                if (success) {
+                    loadItineraries();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
