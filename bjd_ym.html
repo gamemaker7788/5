@@ -269,6 +269,50 @@
             color: #27ae60;
         }
         
+        /* 单号显示样式 */
+        .order-number-section {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #1976d2;
+        }
+        
+        .order-number-label {
+            font-weight: 600;
+            color: #1976d2;
+            margin-right: 0.5rem;
+        }
+        
+        .order-number-value {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #1565c0;
+        }
+        
+        .copy-order-btn {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+            transition: background 0.3s;
+        }
+        
+        .copy-order-btn:hover {
+            background: #1565c0;
+        }
+        
+        .service-type {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
         @media (max-width: 768px) {
             .filters {
                 flex-direction: column;
@@ -292,18 +336,25 @@
 </head>
 <body>
     <div class="container">
-        
+        <header>
+            <h1>格鲁吉亚行程管理系统</h1>
+            <p class="subtitle">行程数据卡片展示</p>
+        </header>
         
         <div class="record-count" id="record-count">0条记录</div>
         
         <div class="filters">
             <div class="filter-item">
+                <label for="search">搜索单号/服务类型</label>
+                <input type="text" id="search" placeholder="输入单号或服务类型...">
+            </div>
+            <div class="filter-item">
                 <label for="date-from">开始日期</label>
-                <input type="date" id="date-from" placeholder="无">
+                <input type="date" id="date-from">
             </div>
             <div class="filter-item">
                 <label for="date-to">结束日期</label>
-                <input type="date" id="date-to" placeholder="无">
+                <input type="date" id="date-to">
             </div>
             <div class="filter-item">
                 <label for="guide-type">导游类型</label>
@@ -316,7 +367,10 @@
             </div>
             <div class="filter-item">
                 <button class="btn" onclick="loadItineraries()">
-                    <i class="fas fa-sync-alt"></i> 加载数据
+                    <i class="fas fa-search"></i> 搜索
+                </button>
+                <button class="btn btn-success" onclick="clearFilters()">
+                    <i class="fas fa-sync-alt"></i> 重置
                 </button>
             </div>
         </div>
@@ -348,7 +402,7 @@
         let supabase = null;
         let itinerariesData = [];
         let currentPage = 1;
-        const itemsPerPage = 3;
+        const itemsPerPage = 6;
 
         // 初始化Supabase
         async function initSupabase() {
@@ -365,6 +419,7 @@
                 
                 console.log('Supabase连接成功');
                 return true;
+
                 
             } catch (error) {
                 console.error('Supabase连接失败:', error);
@@ -382,6 +437,7 @@
             try {
                 showLoading('正在加载数据...');
                 
+                const search = document.getElementById('search').value.trim();
                 const dateFrom = document.getElementById('date-from').value;
                 const dateTo = document.getElementById('date-to').value;
                 const guideType = document.getElementById('guide-type').value;
@@ -397,6 +453,10 @@
                     .order('created_at', { ascending: false });
 
                 // 应用筛选条件
+                if (search) {
+                    query = query.or(`order_number.ilike.%${search}%,service_type.ilike.%${search}%`);
+                }
+                
                 if (dateFrom) {
                     query = query.gte('start_date', dateFrom);
                 }
@@ -439,28 +499,47 @@
             }
         }
 
+        // 清空筛选条件
+        function clearFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('date-from').value = '';
+            document.getElementById('date-to').value = '';
+            document.getElementById('guide-type').value = '';
+            loadItineraries();
+        }
+
         // 使用模拟数据（当Supabase表不存在时）
         function useMockData() {
             const mockData = [
                 {
                     id: 'demo-001',
-                    service_type: '格鲁吉亚7日游',
-                    start_date: null,
-                    end_date: null,
-                    flight_number: null,
+                    order_number: 'ORD20240115001',
+                    service_type: '格鲁吉亚7日经典游',
+                    start_date: '2024-01-15',
+                    end_date: '2024-01-21',
+                    flight_number: 'CZ6039',
                     car_type: '7座商务车',
                     guide_type: 'chinese',
                     total_price: '1250',
-                    created_at: null,
-                    arrival_time: null,
-                    hotel_standard: null,
-                    room_type: null,
+                    created_at: '2024-01-10T10:30:00Z',
+                    arrival_time: '14:30',
+                    hotel_standard: '四星级',
+                    room_type: '双人间',
                     itinerary_days: [
                         {
                             day_number: 1,
-                            date: null,
+                            date: '2024-01-15',
                             plan: '抵达第比利斯，接机后入住酒店',
                             plan_price: '50',
+                            accommodation: '第比利斯四星酒店',
+                            accommodation_price: '80',
+                            guide_service: true
+                        },
+                        {
+                            day_number: 2,
+                            date: '2024-01-16',
+                            plan: '第比利斯城市观光',
+                            plan_price: '60',
                             accommodation: '第比利斯四星酒店',
                             accommodation_price: '80',
                             guide_service: true
@@ -469,15 +548,67 @@
                     passengers: [
                         {
                             name: '张先生',
-                            country_code: null,
-                            phone: null
+                            country_code: '+86',
+                            phone: '13800138000'
+                        },
+                        {
+                            name: '李女士',
+                            country_code: '+86', 
+                            phone: '13900139000'
                         }
                     ],
                     extra_services: [
                         {
                             service_name: '机场接送',
-                            price: '10',
-                            unit: '/次',
+                            price: '40',
+                            unit: '/车',
+                            is_selected: true
+                        },
+                        {
+                            service_name: '酒庄品酒',
+                            price: '30',
+                            unit: '/人',
+                            is_selected: true
+                        }
+                    ]
+                },
+                {
+                    id: 'demo-002',
+                    order_number: 'ORD20240120002',
+                    service_type: '格鲁吉亚5日精华游',
+                    start_date: '2024-01-20',
+                    end_date: '2024-01-24',
+                    flight_number: 'TK1234',
+                    car_type: '5座SUV',
+                    guide_type: 'english',
+                    total_price: '980',
+                    created_at: '2024-01-12T14:20:00Z',
+                    arrival_time: '16:45',
+                    hotel_standard: '五星级',
+                    room_type: '大床房',
+                    itinerary_days: [
+                        {
+                            day_number: 1,
+                            date: '2024-01-20',
+                            plan: '抵达第比利斯，自由活动',
+                            plan_price: '40',
+                            accommodation: '第比利斯五星酒店',
+                            accommodation_price: '120',
+                            guide_service: false
+                        }
+                    ],
+                    passengers: [
+                        {
+                            name: 'John Smith',
+                            country_code: '+1',
+                            phone: '5551234567'
+                        }
+                    ],
+                    extra_services: [
+                        {
+                            service_name: '景点门票',
+                            price: '80',
+                            unit: '/张',
                             is_selected: true
                         }
                     ]
@@ -504,23 +635,36 @@
 
             cardsContainer.innerHTML = currentItems.map(itinerary => `
                 <div class="itinerary-card">
+                    <!-- 单号显示区域 -->
+                    <div class="order-number-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span class="order-number-label">单号:</span>
+                                <span class="order-number-value">${itinerary.order_number || '未分配'}</span>
+                            </div>
+                            <button class="copy-order-btn" onclick="copyToClipboard('${itinerary.order_number || ''}')">
+                                <i class="fas fa-copy"></i> 复制
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div class="card-header">
-                        <h2>${itinerary.service_type || '无'}</h2>
-                        <span class="card-id">${itinerary.id || '无'}</span>
+                        <h2 class="service-type">${itinerary.service_type || '无服务类型'}</h2>
+                        <span class="card-id">ID: ${itinerary.id?.substring(0, 8) || 'N/A'}</span>
                     </div>
                     
                     <div class="card-section">
-                        <h3>基本信息</h3>
+                        <h3><i class="fas fa-info-circle"></i> 基本信息</h3>
                         <div class="info-item">
-                            <span class="info-label">日期:</span>
+                            <span class="info-label">出行日期:</span>
                             <span>${formatDate(itinerary.start_date)} - ${formatDate(itinerary.end_date)}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">航班:</span>
+                            <span class="info-label">航班号:</span>
                             <span>${itinerary.flight_number || '无'}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">抵达:</span>
+                            <span class="info-label">抵达时间:</span>
                             <span>${itinerary.arrival_time || '无'}</span>
                         </div>
                         <div class="info-item">
@@ -528,28 +672,27 @@
                             <span>${itinerary.car_type || '无'}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">导游:</span>
+                            <span class="info-label">导游类型:</span>
                             <span>${getGuideTypeText(itinerary.guide_type)}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">酒店:</span>
+                            <span class="info-label">酒店标准:</span>
                             <span>${itinerary.hotel_standard || '无'} - ${itinerary.room_type || '无'}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">总价:</span>
+                            <span class="info-label">总价格:</span>
                             <span class="price-tag">${itinerary.total_price || '0'} USD</span>
                         </div>
                     </div>
                     
                     <div class="card-section">
-                        <h3>行程安排</h3>
+                        <h3><i class="fas fa-calendar-alt"></i> 行程安排 (${itinerary.itinerary_days?.length || 0}天)</h3>
                         ${itinerary.itinerary_days?.length > 0 ? 
                             itinerary.itinerary_days.map(day => `
                                 <div class="day-item">
-                                    <div class="day-header">第${day.day_number}天 (${day.date || '无日期'})</div>
-                                    <div>${day.plan || '无'}</div>
+                                    <div style="font-weight:600;color:#2c3e50;">第${day.day_number}天 (${formatDate(day.date)})</div>
+                                    <div>${day.plan || '无行程安排'}</div>
                                     <div>住宿: ${day.accommodation || '无'} (${day.accommodation_price || '0'} USD)</div>
-                                    <div>导游服务: ${day.guide_service ? '是' : '否'}</div>
                                 </div>
                             `).join('') : 
                             '<p>无行程安排</p>'
@@ -557,12 +700,12 @@
                     </div>
                     
                     <div class="card-section">
-                        <h3>乘客信息</h3>
+                        <h3><i class="fas fa-users"></i> 乘客信息 (${itinerary.passengers?.length || 0}人)</h3>
                         ${itinerary.passengers?.length > 0 ? 
                             itinerary.passengers.map(passenger => `
                                 <div class="passenger-item">
-                                    <span>${passenger.name || '无'}</span>
-                                    <span>${passenger.country_code || ''}-${passenger.phone || '无'}</span>
+                                    <span>${passenger.name || '无名'}</span>
+                                    <span>${passenger.country_code || ''}${passenger.phone ? ' ' + passenger.phone : '无电话'}</span>
                                 </div>
                             `).join('') : 
                             '<p>无乘客信息</p>'
@@ -570,11 +713,11 @@
                     </div>
                     
                     <div class="card-section">
-                        <h3>附加服务</h3>
+                        <h3><i class="fas fa-plus-circle"></i> 附加服务</h3>
                         ${itinerary.extra_services?.filter(s => s.is_selected).length > 0 ? 
                             itinerary.extra_services.filter(s => s.is_selected).map(service => `
                                 <div class="service-item">
-                                    <span>${service.service_name || '无'}</span>
+                                    <span>${service.service_name || '无名称'}</span>
                                     <span>${service.price || '0'} USD${service.unit || ''}</span>
                                 </div>
                             `).join('') : 
@@ -583,6 +726,38 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // 复制单号到剪贴板
+        function copyToClipboard(text) {
+            if (!text || text === '未分配') return;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('单号已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                // 降级方案
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showStatus('单号已复制');
+            });
+        }
+
+        // 显示状态消息
+        function showStatus(message) {
+            // 创建临时状态提示
+            const status = document.createElement('div');
+            status.style.cssText = 'position:fixed;top:20px;right:20px;background:#27ae60;color:white;padding:10px 20px;border-radius:5px;z-index:1000;';
+            status.textContent = message;
+            document.body.appendChild(status);
+            
+            setTimeout(() => {
+                document.body.removeChild(status);
+            }, 2000);
         }
 
         // 显示加载状态
@@ -634,7 +809,6 @@
                 updateNavigation();
             }
         }
-
         // 下一页
         function nextPage() {
             const totalPages = Math.ceil(itinerariesData.length / itemsPerPage);
@@ -657,13 +831,26 @@
 
         // 格式化日期
         function formatDate(dateString) {
-            if (!dateString) return '无';
+            if (!dateString) return '无日期';
             try {
                 const date = new Date(dateString);
                 return date.toLocaleDateString('zh-CN');
             } catch (e) {
-                return '无';
+                return '无效日期';
             }
+        }
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
         // 页面加载完成后初始化
@@ -671,6 +858,14 @@
             // 设置日期输入框为空
             document.getElementById('date-from').value = '';
             document.getElementById('date-to').value = '';
+            
+            // 添加搜索框实时搜索
+            document.getElementById('search').addEventListener('input', debounce(loadItineraries, 500));
+            
+            // 添加其他筛选条件的变更监听
+            document.getElementById('date-from').addEventListener('change', loadItineraries);
+            document.getElementById('date-to').addEventListener('change', loadItineraries);
+            document.getElementById('guide-type').addEventListener('change', loadItineraries);
             
             // 初始化Supabase并加载数据
             initSupabase().then(success => {

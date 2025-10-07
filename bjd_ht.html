@@ -61,7 +61,7 @@
     <div class="filters">
       <div class="filter-item">
         <label for="search">搜索</label>
-        <input type="text" id="search" placeholder="服务类型、航班号..."/>
+        <input type="text" id="search" placeholder="单号、服务类型、航班号..."/>
       </div>
       <div class="filter-item">
         <label for="date-from">出行日期从</label>
@@ -91,7 +91,15 @@
       <table>
         <thead>
           <tr>
-            <th>ID</th><th>服务类型</th><th>出行日期</th><th>航班号</th><th>车型</th><th>导游类型</th><th>总价格</th><th>创建时间</th><th>操作</th>
+            <th width="10%">单号</th>
+            <th width="12%">服务类型</th>
+            <th width="12%">出行日期</th>
+            <th width="10%">航班号</th>
+            <th width="8%">车型</th>
+            <th width="10%">导游类型</th>
+            <th width="8%">总价格</th>
+            <th width="12%">创建时间</th>
+            <th width="18%">操作</th>
           </tr>
         </thead>
         <tbody id="data-body"><tr><td colspan="9" class="loading">加载中...</td></tbody>
@@ -129,10 +137,10 @@
   </div>
 
   <script>
-    /* ---------- Supabase ---------- */
-    const supabaseUrl = 'https://fezxhcmiefdbvqmhczut.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    /* ---------- Supabase 配置 ---------- */
+    const SUPABASE_URL = 'https://fezxhcmiefdbvqmhczut.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     /* ---------- 全局变量 ---------- */
     let currentPage = 1, itemsPerPage = 10, totalRecords = 0, currentDeleteId = null;
@@ -145,44 +153,58 @@
     const debounce = (fn,wait)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),wait)}};
     const showStatus = (msg, type = 'success') => {
       const box = document.createElement('div');
-      box.className = `status-message ${type==='success'?'status-success':'status-error'}`; box.textContent = msg;
-      document.body.appendChild(box); setTimeout(()=>box.remove(), 5000);
+      box.className = `status-message ${type==='success'?'status-success':'status-error'}`; 
+      box.textContent = msg;
+      document.body.appendChild(box); 
+      setTimeout(()=>box.remove(), 5000);
     };
 
     /* ---------- 加载主表 ---------- */
     async function loadItineraries() {
-      const search = document.getElementById('search').value.trim();
-      const dateFrom = document.getElementById('date-from').value;
-      const dateTo = document.getElementById('date-to').value;
-      const guideType = document.getElementById('guide-type').value;
+      try {
+        const search = document.getElementById('search').value.trim();
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
+        const guideType = document.getElementById('guide-type').value;
 
-      let q = supabase.from('itineraries').select('*', { count: 'exact' });
-      if (search) q = q.or(`service_type.ilike.%${search}%,flight_number.ilike.%${search}%`);
-      if (dateFrom) q = q.gte('start_date', dateFrom);
-      if (dateTo) q = q.lte('end_date', dateTo);
-      if (guideType) q = q.eq('guide_type', guideType);
+        let query = supabase.from('itineraries').select('*', { count: 'exact' });
+        
+        if (search) {
+          query = query.or(`order_number.ilike.%${search}%,service_type.ilike.%${search}%,flight_number.ilike.%${search}%`);
+        }
+        if (dateFrom) query = query.gte('start_date', dateFrom);
+        if (dateTo) query = query.lte('end_date', dateTo);
+        if (guideType) query = query.eq('guide_type', guideType);
 
-      const { count, error: cErr } = await q;
-      if (cErr) throw cErr;
-      totalRecords = count;
-      document.getElementById('record-count').textContent = `${count} 条记录`;
+        const { count, error: countError } = await query;
+        if (countError) throw countError;
+        totalRecords = count;
+        document.getElementById('record-count').textContent = `${totalRecords} 条记录`;
 
-      const { data, error } = await q
-        .order('created_at', { ascending: false })
-        .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
-      if (error) throw error;
+        const { data, error } = await query
+          .order('created_at', { ascending: false })
+          .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
+        if (error) throw error;
 
-      renderItineraries(data);
-      renderPagination();
+        renderItineraries(data || []);
+        renderPagination();
+      } catch (error) {
+        console.error('加载数据失败:', error);
+        showStatus('加载数据失败: ' + error.message, 'error');
+        document.getElementById('data-body').innerHTML = '<tr><td colspan="9" class="loading">加载失败，请检查Supabase配置</td></tr>';
+      }
     }
 
     /* ---------- 渲染主表 ---------- */
     function renderItineraries(data) {
       const tbody = document.getElementById('data-body');
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" class="loading">无记录</td></tr>'; return; }
+      if (!data.length) { 
+        tbody.innerHTML = '<tr><td colspan="9" class="loading">无记录</td></tr>'; 
+        return; 
+      }
       tbody.innerHTML = data.map(r => `
         <tr>
-          <td>${r.id.slice(0,8)}...</td>
+          <td><strong>${r.order_number || '无单号'}</strong></td>
           <td>${r.service_type||'无'}</td>
           <td>${fmtDate(r.start_date)} - ${fmtDate(r.end_date)}</td>
           <td>${r.flight_number||'无'}</td>
@@ -202,35 +224,46 @@
 
     /* ---------- 分页 ---------- */
     function renderPagination() {
-      const totalPages = Math.ceil(totalRecords / itemsPerPage), p = document.getElementById('pagination');
+      const totalPages = Math.ceil(totalRecords / itemsPerPage);
+      const p = document.getElementById('pagination');
       if (totalPages <= 1) { p.innerHTML = ''; return; }
       let html = '';
       if (currentPage > 1) html += `<button class="page-btn" onclick="changePage(${currentPage - 1})">上一页</button>`;
-      for (let i = 1; i <= totalPages; i++) html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+      for (let i = 1; i <= totalPages; i++) {
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+      }
       if (currentPage < totalPages) html += `<button class="page-btn" onclick="changePage(${currentPage + 1})">下一页</button>`;
       p.innerHTML = html;
     }
-    function changePage(page) { currentPage = page; loadItineraries(); }
+
+    function changePage(page) { 
+      currentPage = page; 
+      loadItineraries(); 
+    }
 
     /* ---------- 查看详情 ---------- */
     async function viewDetails(id) {
       try {
-        const [{ data: itinerary, error: e1 }, { data: days }, { data: passengers }, { data: services }] = await Promise.all([
+        const [itineraryRes, daysRes, passengersRes, servicesRes] = await Promise.all([
           supabase.from('itineraries').select('*').eq('id', id).single(),
           supabase.from('itinerary_days').select('*').eq('itinerary_id', id).order('day_number'),
           supabase.from('passengers').select('*').eq('itinerary_id', id),
           supabase.from('extra_services').select('*').eq('itinerary_id', id)
         ]);
-        if (e1) throw e1;
-        renderDetails(itinerary, days || [], passengers || [], services || []);
+        if (itineraryRes.error) throw itineraryRes.error;
+        renderDetails(itineraryRes.data, daysRes.data || [], passengersRes.data || [], servicesRes.data || []);
         openModal('detail-modal');
-      } catch (err) { showStatus('加载详情失败: ' + err.message, 'error'); }
+      } catch (err) { 
+        showStatus('加载详情失败: ' + err.message, 'error'); 
+      }
     }
+
     function renderDetails(itinerary, days, passengers, services) {
       document.getElementById('modal-body').innerHTML = `
         <div class="detail-section">
           <h3>基本信息</h3>
           <div class="detail-grid">
+            <div class="detail-item"><span class="detail-label">单号：</span><strong>${itinerary.order_number || '无单号'}</strong></div>
             <div class="detail-item"><span class="detail-label">服务类型：</span>${itinerary.service_type||'无'}</div>
             <div class="detail-item"><span class="detail-label">出行日期：</span>${fmtDate(itinerary.start_date)} - ${fmtDate(itinerary.end_date)}</div>
             <div class="detail-item"><span class="detail-label">抵达时间：</span>${itinerary.arrival_time||'无'}</div>
@@ -248,38 +281,48 @@
             <div><strong>第${d.day_number}天 (${d.date})</strong></div>
             <div class="detail-item"><span class="detail-label">行程：</span>${d.plan||'无'}</div>
             <div class="detail-item"><span class="detail-label">住宿：</span>${d.accommodation||'无'}</div>
+            <div class="detail-item"><span class="detail-label">行程报价：</span>${d.plan_price||0} USD</div>
+            <div class="detail-item"><span class="detail-label">住宿报价：</span>${d.accommodation_price||0} USD</div>
           </div>`).join('')}
         </div>
         <div class="detail-section"><h3>乘客信息 (${passengers.length} 人)</h3>
           ${passengers.map((p,i)=>`<div style="margin-bottom:1rem;padding:1rem;background:#f8f9fa;border-radius:5px;">
             <div><strong>乘客 ${i+1}</strong></div>
             <div class="detail-item"><span class="detail-label">姓名：</span>${p.name||'无'}</div>
-            <div class="detail-item"><span class="detail-label">电话：</span>${p.country_code||''}-${p.phone||'无'}</div>
+            <div class="detail-item"><span class="detail-label">电话：</span>${p.country_code||''}${p.phone?'-'+p.phone:'无'}</div>
           </div>`).join('')}
         </div>
         <div class="detail-section"><h3>附加服务</h3>
-          ${services.filter(s=>s.is_selected).length?services.filter(s=>s.is_selected).map(s=>`<div style="margin-bottom:1rem;padding:1rem;background:#f8f9fa;border-radius:5px;">
+          ${services.filter(s=>s.is_selected).length ? services.filter(s=>s.is_selected).map(s=>`<div style="margin-bottom:1rem;padding:1rem;background:#f8f9fa;border-radius:5px;">
             <div class="detail-item"><span class="detail-label">服务名称：</span>${s.service_name||'无'}</div>
             <div class="detail-item"><span class="detail-label">价格：</span>${s.price||0} USD${s.unit||''}</div>
-          </div>`).join(''):'<p>无附加服务</p>'}
+          </div>`).join('') : '<p>无附加服务</p>'}
         </div>`;
     }
 
-    /* ---------- 编辑（完整） ---------- */
+    /* ---------- 编辑功能 ---------- */
     async function editItinerary(id) {
       try {
-        const [r, days, passengers, services] = await Promise.all([
+        const [itineraryRes, daysRes, passengersRes, servicesRes] = await Promise.all([
           supabase.from('itineraries').select('*').eq('id', id).single(),
           supabase.from('itinerary_days').select('*').eq('itinerary_id', id).order('day_number'),
           supabase.from('passengers').select('*').eq('itinerary_id', id),
           supabase.from('extra_services').select('*').eq('itinerary_id', id)
         ]);
-        if (r.error) throw r.error;
-        editDataCache = { itinerary: r.data, days: days.data || [], passengers: passengers.data || [], services: services.data || [] };
+        if (itineraryRes.error) throw itineraryRes.error;
+        editDataCache = { 
+          itinerary: itineraryRes.data, 
+          days: daysRes.data || [], 
+          passengers: passengersRes.data || [], 
+          services: servicesRes.data || [] 
+        };
         renderFullEditForm();
         openModal('edit-modal');
-      } catch (err) { showStatus('加载编辑数据失败: ' + err.message, 'error'); }
+      } catch (err) { 
+        showStatus('加载编辑数据失败: ' + err.message, 'error'); 
+      }
     }
+
     function renderFullEditForm() {
       const r = editDataCache.itinerary;
       document.getElementById('edit-body').innerHTML = `
@@ -287,30 +330,86 @@
           <input type="hidden" name="id" value="${r.id}"/>
           <h4>主信息</h4>
           <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>服务类型</label><input type="text" name="service_type" class="form-control" value="${r.service_type||''}" required/></div></div>
-            <div class="form-col"><div class="form-group"><label>车型</label><input type="text" name="car_type" class="form-control" value="${r.car_type||''}"/></div></div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>单号</label>
+                <input type="text" name="order_number" class="form-control" value="${r.order_number||''}" placeholder="可不填，自动生成"/>
+              </div>
+            </div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>服务类型</label>
+                <input type="text" name="service_type" class="form-control" value="${r.service_type||''}" required/>
+              </div>
+            </div>
           </div>
           <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>开始日期</label><input type="date" name="start_date" class="form-control" value="${r.start_date}" required/></div></div>
-            <div class="form-col"><div class="form-group"><label>结束日期</label><input type="date" name="end_date" class="form-control" value="${r.end_date}" required/></div></div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>车型</label>
+                <input type="text" name="car_type" class="form-control" value="${r.car_type||''}"/>
+              </div>
+            </div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>导游类型</label>
+                <select name="guide_type" class="form-control">
+                  <option value="no" ${r.guide_type==='no'?'selected':''}>无需导游</option>
+                  <option value="chinese" ${r.guide_type==='chinese'?'selected':''}>中文导游</option>
+                  <option value="english" ${r.guide_type==='english'?'selected':''}>英文导游</option>
+                </select>
+              </div>
+            </div>
           </div>
           <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>航班号</label><input type="text" name="flight_number" class="form-control" value="${r.flight_number||''}"/></div></div>
-            <div class="form-col"><div class="form-group"><label>抵达时间</label><input type="time" name="arrival_time" class="form-control" value="${r.arrival_time||''}"/></div></div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>开始日期</label>
+                <input type="date" name="start_date" class="form-control" value="${r.start_date}" required/>
+              </div>
+            </div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>结束日期</label>
+                <input type="date" name="end_date" class="form-control" value="${r.end_date}" required/>
+              </div>
+            </div>
           </div>
           <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>酒店标准</label><input type="text" name="hotel_standard" class="form-control" value="${r.hotel_standard||''}"/></div></div>
-            <div class="form-col"><div class="form-group"><label>房型</label><input type="text" name="room_type" class="form-control" value="${r.room_type||''}"/></div></div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>航班号</label>
+                <input type="text" name="flight_number" class="form-control" value="${r.flight_number||''}"/>
+              </div>
+            </div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>抵达时间</label>
+                <input type="time" name="arrival_time" class="form-control" value="${r.arrival_time||''}"/>
+              </div>
+            </div>
           </div>
           <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>导游类型</label>
-              <select name="guide_type" class="form-control">
-                <option value="no" ${r.guide_type==='no'?'selected':''}>无需导游</option>
-                <option value="chinese" ${r.guide_type==='chinese'?'selected':''}>中文导游</option>
-                <option value="english" ${r.guide_type==='english'?'selected':''}>英文导游</option>
-              </select>
-            </div></div>
-            <div class="form-col"><div class="form-group"><label>总价格 (USD)</label><input type="number" name="total_price" class="form-control" value="${r.total_price||0}" step="0.01" min="0" required/></div></div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>酒店标准</label>
+                <input type="text" name="hotel_standard" class="form-control" value="${r.hotel_standard||''}"/>
+              </div>
+            </div>
+            <div class="form-col">
+              <div class="form-group">
+                <label>房型</label>
+                <input type="text" name="room_type" class="form-control" value="${r.room_type||''}"/>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <div class="form-group">
+                <label>总价格 (USD)</label>
+                <input type="number" name="total_price" class="form-control" value="${r.total_price||0}" step="0.01" min="0" required/>
+              </div>
+            </div>
           </div>
 
           <h4>行程安排（逐天编辑）</h4>
@@ -329,6 +428,7 @@
         </form>`;
       renderDayList(); renderPassengerList(); renderServiceList();
     }
+    
     function renderDayList() {
       const box = document.getElementById('day-list');
       box.innerHTML = editDataCache.days.map((d,i)=>`
@@ -345,6 +445,7 @@
           </div>
         </div>`).join('');
     }
+    
     function renderPassengerList() {
       const box = document.getElementById('passenger-list');
       box.innerHTML = editDataCache.passengers.map((p,i)=>`
@@ -358,6 +459,7 @@
           </div>
         </div>`).join('');
     }
+    
     function renderServiceList() {
       const box = document.getElementById('service-list');
       box.innerHTML = editDataCache.services.map((s,i)=>`
@@ -370,59 +472,79 @@
           </div>
         </div>`).join('');
     }
+    
     async function saveFullEdit(e) {
       e.preventDefault();
       const f = e.target, d = Object.fromEntries(new FormData(f));
       try {
-        // 1. 主表
-        const { error: mainErr } = await supabase.from('itineraries')
-          .update({
-            service_type: d.service_type, car_type: d.car_type, start_date: d.start_date, end_date: d.end_date,
-            flight_number: d.flight_number, arrival_time: d.arrival_time, hotel_standard: d.hotel_standard,
-            room_type: d.room_type, guide_type: d.guide_type, total_price: parseFloat(d.total_price),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', d.id);
-        if (mainErr) throw mainErr;
-        // 2. 天数
+        await supabase.from('itineraries').update({
+          order_number: d.order_number,
+          service_type: d.service_type,
+          car_type: d.car_type,
+          guide_type: d.guide_type,
+          start_date: d.start_date,
+          end_date: d.end_date,
+          flight_number: d.flight_number,
+          arrival_time: d.arrival_time,
+          hotel_standard: d.hotel_standard,
+          room_type: d.room_type,
+          total_price: parseFloat(d.total_price) || 0,
+          updated_at: new Date().toISOString()
+        }).eq('id', d.id);
+
         for (let i = 0; i < editDataCache.days.length; i++) {
-          const { error } = await supabase.from('itinerary_days')
-            .update({
-              plan: d[`day_plan_${i}`], accommodation: d[`day_accommodation_${i}`],
-              plan_price: parseFloat(d[`day_plan_price_${i}`])||0, accommodation_price: parseFloat(d[`day_accommodation_price_${i}`])||0
-            })
-            .eq('id', d[`day_id_${i}`]);
-          if (error) throw error;
+          await supabase.from('itinerary_days').update({
+            plan: d[`day_plan_${i}`],
+            accommodation: d[`day_accommodation_${i}`],
+            plan_price: parseFloat(d[`day_plan_price_${i}`]) || 0,
+            accommodation_price: parseFloat(d[`day_accommodation_price_${i}`]) || 0
+          }).eq('id', d[`day_id_${i}`]);
         }
-        // 3. 乘客
+
         for (let i = 0; i < editDataCache.passengers.length; i++) {
-          const { error } = await supabase.from('passengers')
-            .update({
-              name: d[`passenger_name_${i}`], country_code: d[`passenger_country_code_${i}`], phone: d[`passenger_phone_${i}`]
-            })
-            .eq('id', d[`passenger_id_${i}`]);
-          if (error) throw error;
+          await supabase.from('passengers').update({
+            name: d[`passenger_name_${i}`],
+            country_code: d[`passenger_country_code_${i}`],
+            phone: d[`passenger_phone_${i}`]
+          }).eq('id', d[`passenger_id_${i}`]);
         }
-        // 4. 服务
+
         for (let i = 0; i < editDataCache.services.length; i++) {
-          const { error } = await supabase.from('extra_services')
-            .update({ price: parseFloat(d[`service_price_${i}`])||0, is_selected: d[`service_selected_${i}`]==='true' })
-            .eq('id', d[`service_id_${i}`]);
-          if (error) throw error;
+          await supabase.from('extra_services').update({
+            price: parseFloat(d[`service_price_${i}`]) || 0,
+            is_selected: d[`service_selected_${i}`] === 'true'
+          }).eq('id', d[`service_id_${i}`]);
         }
-        showStatus('全部更新成功！'); closeModal('edit-modal'); loadItineraries();
-      } catch (err) { showStatus('更新失败: ' + err.message, 'error'); }
+
+        showStatus('全部更新成功！'); 
+        closeModal('edit-modal'); 
+        loadItineraries();
+      } catch (err) { 
+        showStatus('更新失败: ' + err.message, 'error'); 
+      }
     }
 
     /* ---------- 删除 ---------- */
-    function showDeleteModal(id) { currentDeleteId = id; openModal('delete-modal'); }
+    function showDeleteModal(id) { 
+      currentDeleteId = id; 
+      openModal('delete-modal'); 
+    }
+    
     async function confirmDelete() {
       if (!currentDeleteId) return;
       try {
-        const { error } = await supabase.from('itineraries').delete().eq('id', currentDeleteId);
-        if (error) throw error;
-        showStatus('删除成功！'); closeModal('delete-modal'); loadItineraries();
-      } catch (err) { showStatus('删除失败: ' + err.message, 'error'); }
+        await Promise.all([
+          supabase.from('itineraries').delete().eq('id', currentDeleteId),
+          supabase.from('itinerary_days').delete().eq('itinerary_id', currentDeleteId),
+          supabase.from('passengers').delete().eq('itinerary_id', currentDeleteId),
+          supabase.from('extra_services').delete().eq('itinerary_id', currentDeleteId)
+        ]);
+        showStatus('删除成功！'); 
+        closeModal('delete-modal'); 
+        loadItineraries();
+      } catch (err) { 
+        showStatus('删除失败: ' + err.message, 'error'); 
+      }
     }
 
     /* ---------- 导出 CSV ---------- */
@@ -430,34 +552,73 @@
       try {
         const { data, error } = await supabase.from('itineraries').select('*').order('created_at', { ascending: false });
         if (error) throw error;
-        const head = ['ID', '服务类型', '开始日期', '结束日期', '抵达时间', '航班号', '车型', '酒店标准', '房型', '导游类型', '总价格', '创建时间'];
+        const head = ['单号', '服务类型', '开始日期', '结束日期', '抵达时间', '航班号', '车型', '酒店标准', '房型', '导游类型', '总价格', '创建时间'];
         const body = data.map(r => [
-          r.id, r.service_type, r.start_date, r.end_date, r.arrival_time || '', r.flight_number || '', r.car_type || '',
-          r.hotel_standard || '', r.room_type || '', guideTxt(r.guide_type), r.total_price || 0, fmtDateTime(r.created_at)
+          r.order_number || '无单号', 
+          r.service_type, 
+          r.start_date, 
+          r.end_date, 
+          r.arrival_time || '', 
+          r.flight_number || '', 
+          r.car_type || '',
+          r.hotel_standard || '', 
+          r.room_type || '', 
+          guideTxt(r.guide_type), 
+          r.total_price || 0, 
+          fmtDateTime(r.created_at)
         ]);
         const csv = [head, ...body].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a'), url = URL.createObjectURL(blob);
-        link.setAttribute('href', url); link.setAttribute('download', '格鲁吉亚行程数据导出.csv'); link.style.visibility = 'hidden';
-        document.body.appendChild(link); link.click(); link.remove();
-      } catch (err) { showStatus('导出失败: ' + err.message, 'error'); }
+        link.setAttribute('href', url); 
+        link.setAttribute('download', '格鲁吉亚行程数据导出.csv'); 
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link); 
+        link.click(); 
+        link.remove();
+      } catch (err) { 
+        showStatus('导出失败: ' + err.message, 'error'); 
+      }
     }
 
     /* ---------- 模态框开关 ---------- */
-    function openModal(id) { document.getElementById(id).style.display = 'block'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function openModal(id) { 
+      document.getElementById(id).style.display = 'block'; 
+    }
+    
+    function closeModal(id) { 
+      document.getElementById(id).style.display = 'none'; 
+    }
 
-    /* ---------- 初始化（无默认日期） ---------- */
+    /* ---------- 初始化 ---------- */
     document.addEventListener('DOMContentLoaded', () => {
-      // ✅ 不再自动填充日期，保持为空 = 默认不限制
+      testSupabaseConnection();
       loadItineraries();
       ['search','date-from','date-to','guide-type'].forEach(id=>{
         document.getElementById(id).addEventListener('input', debounce(loadItineraries, 500));
       });
       window.addEventListener('click', e => {
-        document.querySelectorAll('.modal').forEach(m => { if (e.target === m) m.style.display = 'none'; });
+        document.querySelectorAll('.modal').forEach(m => { 
+          if (e.target === m) m.style.display = 'none'; 
+        });
       });
     });
+
+    /* ---------- 测试 Supabase 连接 ---------- */
+    async function testSupabaseConnection() {
+      try {
+        const { data, error } = await supabase.from('itineraries').select('count');
+        if (error) {
+          console.error('Supabase 连接失败:', error);
+          showStatus('Supabase 连接失败，请检查配置', 'error');
+        } else {
+          console.log('Supabase 连接成功');
+        }
+      } catch (error) {
+        console.error('Supabase 连接测试失败:', error);
+        showStatus('Supabase 连接测试失败: ' + error.message, 'error');
+      }
+    }
   </script>
 </body>
 </html>

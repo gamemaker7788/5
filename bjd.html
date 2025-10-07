@@ -113,18 +113,33 @@
             align-items: center;
         }
         
-        .date-input {
+        .date-input, .time-input, .order-number-input {
             padding: 0.5rem;
             border: 1px solid #ddd;
             border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .date-input {
             width: 150px;
         }
         
         .time-input {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
             width: 100px;
+        }
+        
+        .order-number-input {
+            width: 200px;
+        }
+        
+        .editable {
+            background-color: #fffde7;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            border: 1px dashed #ffc107;
+            min-height: 30px;
+            display: inline-block;
+            min-width: 100px;
         }
         
         .itinerary-table {
@@ -144,21 +159,10 @@
         .itinerary-table th {
             background-color: #f2f2f2;
             font-weight: 600;
-            text-align: left;
         }
         
         .itinerary-table tr:hover {
             background-color: #f9f9f9;
-        }
-        
-        /* 添加列之间的虚线 */
-        .itinerary-table td:not(:last-child)::after {
-            content: "";
-            position: absolute;
-            right: 0;
-            top: 10%;
-            height: 80%;
-            border-right: 1px dashed #ccc;
         }
         
         .day-number {
@@ -226,6 +230,7 @@
             border-bottom: 1px solid #eee;
             display: flex;
             align-items: center;
+            gap: 0.5rem;
         }
         
         .passenger-item:last-child {
@@ -233,7 +238,6 @@
         }
         
         .passenger-number {
-            margin-right: 0.5rem;
             font-weight: 600;
         }
         
@@ -285,23 +289,6 @@
             padding: 2rem;
             background-color: #2c3e50;
             color: white;
-        }
-        
-        .contact-info {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 1rem;
-        }
-        
-        .editable {
-            background-color: #fffde7;
-            padding: 0.2rem 0.5rem;
-            border-radius: 3px;
-            border: 1px dashed #ffc107;
-            min-height: 30px;
-            display: inline-block;
-            min-width: 100px;
         }
         
         .output-area {
@@ -360,15 +347,16 @@
         .extra-service-price {
             display: flex;
             align-items: center;
+            gap: 0.5rem;
         }
         
-        .guide-options {
+        .guide-options, .car-options {
             display: flex;
             gap: 1rem;
             margin-bottom: 1rem;
         }
         
-        .guide-option {
+        .guide-option, .car-option {
             flex: 1;
             padding: 1rem;
             border: 1px solid #ddd;
@@ -377,12 +365,12 @@
             transition: all 0.3s;
         }
         
-        .guide-option.selected {
+        .guide-option.selected, .car-option.selected {
             border-color: #8b0000;
             background-color: #fff5f5;
         }
         
-        .guide-option h4 {
+        .guide-option h4, .car-option h4 {
             color: #8b0000;
             margin-bottom: 0.5rem;
             text-align: left;
@@ -394,7 +382,6 @@
             color: #dc3545;
             cursor: pointer;
             font-size: 1.2rem;
-            margin-left: 0.5rem;
         }
         
         .itinerary-actions {
@@ -439,6 +426,7 @@
         .phone-input {
             display: flex;
             align-items: center;
+            gap: 0.5rem;
         }
         
         .country-code {
@@ -446,7 +434,6 @@
             padding: 0.3rem;
             border: 1px solid #ddd;
             border-radius: 3px;
-            margin-right: 0.5rem;
         }
         
         .phone-number {
@@ -462,83 +449,11 @@
             gap: 0.5rem;
         }
         
-        .car-options {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .car-option {
-            flex: 1;
-            padding: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .car-option.selected {
-            border-color: #8b0000;
-            background-color: #fff5f5;
-        }
-        
-        .car-option h4 {
-            color: #8b0000;
-            margin-bottom: 0.5rem;
-            text-align: left;
-        }
-        
-        .car-option input[type="text"] {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            margin-top: 0.5rem;
-        }
-        
-        .extra-service-checkbox {
-            margin-right: 0.5rem;
-        }
-        
-        .unit-input {
-            width: 60px;
+        .unit-input, .extra-service-date {
+            width: 80px;
             padding: 0.3rem;
             border: 1px solid #ddd;
             border-radius: 3px;
-            margin-left: 0.5rem;
-        }
-        
-        /* 时间选择器样式 */
-        input[type="time"] {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-            width: 100px;
-        }
-        
-        /* 日期选择器样式 */
-        input[type="date"] {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-            width: 150px;
-        }
-        
-        /* 禁用导游天数选择 */
-        .day-guide-selection.disabled {
-            opacity: 0.5;
-        }
-        
-        .car-change-service {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .car-change-checkbox {
-            margin-right: 0.5rem;
         }
         
         @media (max-width: 768px) {
@@ -546,24 +461,7 @@
                 grid-template-columns: 1fr;
             }
             
-            .contact-info {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .itinerary-table {
-                font-size: 0.9rem;
-            }
-            
-            .price-input {
-                width: 60px;
-            }
-            
             .guide-options, .car-options {
-                flex-direction: column;
-            }
-            
-            .day-actions {
                 flex-direction: column;
             }
             
@@ -583,30 +481,17 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
-            .date-select, .time-input {
-                width: 100%;
-            }
-        }
-		/* 在样式部分添加 */
-        .extra-service-date {
-            width: 120px;
-            padding: 0.3rem;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            margin-left: 0.5rem;
         }
     </style>
 </head>
 <body>
-    <!-- HTML内容保持不变 -->
- <div class="container">
+    <div class="container">
         <header>
             <div class="logo">
                 <i class="fas fa-globe-europe"></i>
             </div>
             <h1>格鲁吉亚跟团游行程报价单</h1>
-            
+            <p class="subtitle">专业地接服务管理系统</p>
         </header>
         
         <div class="content">
@@ -616,6 +501,12 @@
                 <div class="info-grid">
                     <div class="info-card">
                         <h3>出行信息</h3>
+                        <div class="info-item">
+                            <span class="info-label">单号：</span>
+                            <span class="info-value">
+                                <input type="text" class="order-number-input" id="order-number" placeholder="可不填，自动生成">
+                            </span>
+                        </div>
                         <div class="info-item">
                             <span class="info-label">服务类型：</span>
                             <span class="info-value">
@@ -686,7 +577,6 @@
                             <th width="15%">日期</th>
                             <th width="30%">行程</th>
                             <th width="10%">行程报价</th>
-
                             <th width="25%">住宿</th>
                             <th width="10%">住宿报价</th>
                             <th width="5%">导游</th>
@@ -718,14 +608,6 @@
                             <input type="number" id="multi-seat-input" placeholder="输入座位数" style="display: none;">
                         </div>
                     </div>
-                    
-                    <div class="cost-item">
-                        <div class="car-change-service">
-                            <input type="checkbox" id="car-change-checkbox" class="car-change-checkbox" onchange="toggleCarChangeService()">
-                            <label for="car-change-checkbox">换车服务</label>
-                            <input type="number" class="price-input" value="100" min="0" id="car-change-price" onchange="updateCarChangePrice()" disabled> USD
-                        </div>
-                </div>
                     
                     <h3>导游服务选择</h3>
                     <div class="guide-options">
@@ -820,14 +702,13 @@
                     <button class="btn btn-export" onclick="updateOutput()"><i class="fas fa-sync-alt"></i> 更新输出</button>
                     <button class="btn btn-export" onclick="copyToClipboard()"><i class="fas fa-copy"></i> 复制文本</button>
                     <button class="btn" onclick="downloadAsFile()"><i class="fas fa-download"></i> 下载文件</button>
-                    <button class="btn" onclick="saveToSupabase()" style="margin-top: 20px;">
-  <i class="fas fa-save"></i> 保存</button>
+                    <button class="btn" onclick="saveToSupabase()"><i class="fas fa-save"></i> 保存到Supabase</button>
                 </div>
             </div>
         </div>
         
         <footer>
-            <p>格鲁吉亚专业地接服务        </p>
+            <p>格鲁吉亚专业地接服务 © 2023</p>
         </footer>
     </div>
 
@@ -854,8 +735,6 @@
     let selectedGuide = 'no';
     let selectedCar = '7-seat';
     let multiSeatCount = 0;
-    let carChangePrice = 100;
-    let carChangeEnabled = false;
     let itineraryData = [];
     let passengers = [];
     let selectedGuideDays = [];
@@ -888,6 +767,16 @@
         alert(`${type === 'success' ? '成功' : '错误'}: ${message}`);
     }
     
+    // 生成唯一单号
+    function generateOrderNumber() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        return `ORD${year}${month}${day}${random}`;
+    }
+    
     // 初始化行程
     function initializeItinerary() {
         // 设置默认日期为今天和6天后
@@ -906,6 +795,12 @@
         // 设置日期输入框的值
         document.getElementById('start-date').value = formatDate(today);
         document.getElementById('end-date').value = formatDate(endDate);
+        
+        // 检查单号，如果为空则自动生成
+        const orderNumberInput = document.getElementById('order-number');
+        if (!orderNumberInput.value.trim()) {
+            orderNumberInput.value = generateOrderNumber();
+        }
         
         // 初始只有1天行程
         addDay();
@@ -954,7 +849,6 @@
         if (!itineraryBody) return;
         
         itineraryBody.innerHTML = '';
-
         
         itineraryData.forEach((day, index) => {
             const row = document.createElement('tr');
@@ -1118,33 +1012,6 @@
         updateOutput();
     }
     
-    // 切换换车服务
-    function toggleCarChangeService() {
-        const checkbox = document.getElementById('car-change-checkbox');
-        const priceInput = document.getElementById('car-change-price');
-        
-        carChangeEnabled = checkbox.checked;
-        priceInput.disabled = !carChangeEnabled;
-        
-        if (!carChangeEnabled) {
-            carChangePrice = 0;
-            priceInput.value = 0;
-        } else {
-            carChangePrice = parseInt(priceInput.value) || 100;
-        }
-        
-        calculateTotal();
-        updateOutput();
-    }
-    
-    // 更新换车服务价格
-    function updateCarChangePrice() {
-        const priceInput = document.getElementById('car-change-price');
-        carChangePrice = parseInt(priceInput.value) || 0;
-        calculateTotal();
-        updateOutput();
-    }
-    
     // 选择导游类型
     function selectGuide(type) {
         selectedGuide = type;
@@ -1176,26 +1043,6 @@
         const service = extraServices.find(s => s.id === serviceId);
         if (service) {
             service.checked = document.getElementById(serviceId).checked;
-            calculateTotal();
-            updateOutput();
-        }
-    }
-    
-    // 更新服务名称
-    function updateExtraServiceName(serviceId, newName) {
-        const service = extraServices.find(s => s.id === serviceId);
-        if (service) {
-            service.name = newName;
-            calculateTotal();
-            updateOutput();
-        }
-    }
-    
-    // 更新服务日期
-    function updateExtraServiceDate(serviceId, date) {
-        const service = extraServices.find(s => s.id === serviceId);
-        if (service) {
-            service.date = date;
             calculateTotal();
             updateOutput();
         }
@@ -1243,11 +1090,20 @@
             <div class="extra-service-price">
                 <input type="number" class="price-input" value="0" min="0" onchange="updateCost('${newId}')" id="${newId}-price"> USD
                 <input type="text" class="unit-input" placeholder="/单位" onblur="updateCost('${newId}')" id="${newId}-unit">
-                <input type="date" class="extra-service-date" onchange="updateExtraServiceDate('${newId}', this.value)">
-                <button class="remove-btn" onclick="removeService('${newId}')">×</button>
+                <button class="remove-btn" onclick="removeService('${newId}')"><i class="fas fa-times"></i></button>
             </div>
         `;
         document.getElementById('extra-services').appendChild(newServiceElement);
+    }
+    
+    // 更新服务名称
+    function updateExtraServiceName(serviceId, newName) {
+        const service = extraServices.find(s => s.id === serviceId);
+        if (service) {
+            service.name = newName;
+            calculateTotal();
+            updateOutput();
+        }
     }
     
     // 移除服务
@@ -1359,11 +1215,6 @@
                 break;
         }
         
-        // 换车服务费用
-        if (carChangeEnabled) {
-            travelTotal += carChangePrice;
-        }
-        
         document.getElementById('travel-total').textContent = travelTotal;
         
         // 计算住宿费用
@@ -1404,6 +1255,7 @@
         if (!outputContent) return;
         
         // 获取所有数据
+        const orderNumber = document.getElementById('order-number').value;
         const serviceType = document.getElementById('service-type').value;
         const startDateInput = document.getElementById('start-date').value;
         const endDateInput = document.getElementById('end-date').value;
@@ -1476,24 +1328,12 @@
         let extraServicesText = '';
         extraServices.forEach(service => {
             if (service.checked) {
-                let serviceLine = `${service.name}: ${service.price}USD${service.unit}`;
-                if (service.date) {
-                    const serviceDate = new Date(service.date);
-                    const month = serviceDate.getMonth() + 1;
-                    const day = serviceDate.getDate();
-                    serviceLine += ` (${month}月${day}日)`;
-                }
-                extraServicesText += serviceLine + '\n';
+                extraServicesText += `${service.name}: ${service.price}USD${service.unit}\n`;
             }
         });
         
         if (extraServicesText === '') {
             extraServicesText = "无\n";
-        }
-        
-        // 换车服务
-        if (carChangeEnabled && carChangePrice > 0) {
-            extraServicesText += `换车服务: ${carChangePrice}USD\n`;
         }
         
         // 获取乘客信息
@@ -1514,7 +1354,8 @@
         const totalPrice = document.getElementById('total-price').textContent;
         
         // 构建输出文本
-        let outputText = `服务类型：${serviceType}
+        let outputText = `单号：${orderNumber}
+服务类型：${serviceType}
 预计出行日期（当地时间）：${travelDate}
 抵达时间：${arrivalTime}
 航班号：${flightNumber}
@@ -1628,8 +1469,16 @@ ${passengerText}`;
         }
         
         try {
+            // 检查单号，如果为空则自动生成
+            let orderNumber = document.getElementById('order-number').value.trim();
+            if (!orderNumber) {
+                orderNumber = generateOrderNumber();
+                document.getElementById('order-number').value = orderNumber;
+            }
+            
             // 收集基本数据 - 处理空值
             const itineraryDataToSave = {
+                order_number: orderNumber,
                 service_type: document.getElementById('service-type').value,
                 start_date: document.getElementById('start-date').value,
                 end_date: document.getElementById('end-date').value,
@@ -1640,7 +1489,8 @@ ${passengerText}`;
                 room_type: document.getElementById('room-type').value,
                 guide_type: selectedGuide,
                 total_price: document.getElementById('total-price').textContent,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             };
 
             showStatus('正在保存数据...', 'success');
@@ -1720,7 +1570,7 @@ ${passengerText}`;
                 }
             }
 
-            showStatus(`数据保存成功！保存ID: ${itineraryId}`, 'success');
+            showStatus(`数据保存成功！单号: ${orderNumber}, 保存ID: ${itineraryId}`, 'success');
             
         } catch (error) {
             console.error('保存错误:', error);
@@ -1728,7 +1578,7 @@ ${passengerText}`;
         }
     }
     
-    // 页面加载初始化
+    // 页面加载时初始化
     document.addEventListener('DOMContentLoaded', function() {
         console.log('页面加载完成，开始初始化...');
         
