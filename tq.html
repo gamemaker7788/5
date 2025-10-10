@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>9城天气 · 未来5天 · 含日出日落</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body{margin:0;padding:30px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:linear-gradient(135deg,#89f7fe 0%,#66a6ff 100%);color:#fff;text-align:center}
+h1{margin-bottom:10px;font-size:2rem}
+.ctrl{margin-bottom:20px}
+select{padding:8px 12px;border-radius:6px;border:none;font-size:16px}
+.weather-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:15px;max-width:900px;margin:0 auto}
+.day-card{background:rgba(255,255,255,.2);border-radius:12px;padding:15px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.day-date{font-size:14px;opacity:.9}
+.day-icon{font-size:32px;margin:8px 0}
+.day-temp{font-size:18px;font-weight:600}
+.day-desc{font-size:13px;opacity:.8}
+.day-sun{font-size:12px;margin-top:6px}
+footer{margin-top:30px;font-size:13px;opacity:.8}
+</style>
+</head>
+<body>
+<h1><i class="fas fa-sun"></i> 天气</h1>
+<div class="ctrl">
+    <select id="citySelect" onchange="refreshWeather()">
+        <option value="第比利斯">第比利斯</option>
+        <option value="西格纳吉">西格纳吉</option>
+        <option value="卡兹别克">卡兹别克</option>
+        <option value="姆兹赫塔">姆兹赫塔</option>
+        <option value="巴统">巴统</option>
+        <option value="库塔伊西">库塔伊西</option>
+        <option value="戈里">戈里</option>
+        <option value="埃里温">埃里温</option>
+        <option value="塞凡">塞凡</option>
+    </select>
+</div>
+<div id="weatherGrid" class="weather-grid">加载中...</div>
+<footer>2025/10/10</footer>
+
+<script>
+/* ========== 9城坐标 ========== */
+const cityCoords = {
+    '第比利斯': { lat: 41.7151, lon: 44.8271 },
+    '西格纳吉': { lat: 41.6203, lon: 45.5701 },
+    '卡兹别克': { lat: 42.4723, lon: 44.4221 },
+    '姆兹赫塔': { lat: 41.6570, lon: 44.4720 },
+    '巴统':     { lat: 41.6437, lon: 41.6057 },
+    '库塔伊西': { lat: 42.2527, lon: 42.7000 },
+    '戈里':     { lat: 41.9840, lon: 44.1158 },
+    '埃里温':   { lat: 40.1792, lon: 44.4991 },
+    '塞凡':     { lat: 40.5574, lon: 44.9526 }
+};
+
+/* ========== 图标 & 描述 ========== */
+const weatherIcon = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'⛈️',71:'🌨️',73:'🌨️',75:'🌨️',77:'🌨️',80:'🌧️',81:'🌧️',82:'⛈️',85:'🌨️',86:'🌨️',95:'⛈️',96:'🌩️',99:'🌩️'};
+const weatherDesc = {0:'晴',1:'多云',2:'少云',3:'阴天',45:'雾',48:'雾',51:'小雨',53:'中雨',55:'大雨',61:'小雨',63:'中雨',65:'大雨',71:'小雪',73:'中雪',75:'大雪',77:'雪',80:'阵雨',81:'阵雨',82:'强阵雨',85:'阵雪',86:'阵雪',95:'雷暴',96:'强雷暴',99:'强雷暴'};
+
+/* ========== 刷新天气 ========== */
+async function refreshWeather() {
+    const city = document.getElementById('citySelect').value;
+    const coord = cityCoords[city];
+    const today = new Date();
+    const dates = Array.from({length:5},(_,i)=>{
+        const d=new Date(today); d.setDate(today.getDate()+i); return d.toISOString().slice(0,10);
+    });
+
+    const grid = document.getElementById('weatherGrid');
+    grid.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
+
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lon}&start_date=${dates[0]}&end_date=${dates[4]}&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Asia/Shanghai`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+
+        const daily = data.daily;
+        let html = '';
+        for (let i = 0; i < 5; i++) {
+            const date   = dates[i];
+            const code   = daily.weather_code[i];
+            const tmax   = daily.temperature_2m_max[i];
+            const tmin   = daily.temperature_2m_min[i];
+            const sunrise = daily.sunrise[i].slice(11,16);
+            const sunset  = daily.sunset[i].slice(11,16);
+            const icon   = weatherIcon[code] || '🌡️';
+            const desc   = weatherDesc[code] || '未知';
+            const week   = ['周日','周一','周二','周三','周四','周五','周六'][new Date(date).getDay()];
+            html += `
+                <div class="day-card">
+                    <div class="day-date">${week}<br>${date.slice(5)}</div>
+                    <div class="day-icon">${icon}</div>
+                    <div class="day-temp">${tmin}° ~ ${tmax}°</div>
+                    <div class="day-desc">${desc}</div>
+                    <div class="day-sun"><i class="fas fa-sun"></i> ${sunrise}<br><i class="fas fa-moon"></i> ${sunset}</div>
+                </div>`;
+        }
+        grid.innerHTML = html;
+    } catch (e) {
+        grid.innerHTML = '❌ 加载失败';
+        console.error(e);
+    }
+}
+
+/* ========== 初始加载 ========== */
+refreshWeather();
+</script>
+</body>
+</html>
