@@ -1,0 +1,362 @@
+:root{
+    --primary: #ccc;
+    --primary-dark: #660000;
+    --accent: #666;
+}
+
+/* ========= 新按钮统一风格 ========= */
+.btn-box{
+    position: relative;
+    display: inline-block;
+    height: 48px;
+    margin: 1rem .5rem 0 0;   /* 保持与原 .btn 相同的上下间距 */
+	display: block;        /* 独占一行 */
+    margin: 1rem auto;     /* 上下留空，左右居中 */
+    width: fit-content;    /* 宽度只包住按钮 */
+}
+.btn{
+	position: absolute;
+	left: 68px;
+	bottom: 0;
+	height: 48px;
+	line-height: 48px;
+	padding: 0 20px;
+	border: 2px solid #333;
+	border-radius: 0;
+	cursor: pointer;
+	outline: none;
+	color: #fff;
+	font-size: 1rem;
+	font-weight: bold;
+	letter-spacing: 1px;
+	text-align: center;
+	white-space: nowrap;
+	background: var(--primary);
+
+    transition: height .1s, line-height .1s;
+	overflow: hidden;
+}
+.btn::after{
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 8px;
+    background: var(--accent);
+    transition: transform .2s, opacity .2s;
+}
+.btn:active{
+    height: 40px;
+    line-height: 40px;
+}
+.btn:active::after{
+    transform: translateY(4px);
+    opacity: 0;
+}
+
+/* ========= 其余原有样式不动 ========= */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+body{
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+}
+.container{
+	max-width: 1200px;
+	margin: 0 auto;
+	border-radius: 10px;
+	box-shadow: 0 0 20px rgba(0,0,0,.1);
+	overflow: hidden;
+	background-color: #999;
+}
+header{
+	color: #fff;
+	padding: 2rem;
+	text-align: center;
+	background-color: #004EDD;
+	background-position: right;
+}
+.logo{font-size: 2.5rem;margin-bottom: 1rem;}
+h1{font-size: 2rem;margin-bottom: .5rem;}
+.subtitle{font-size: 1.2rem;opacity: .9;}
+.content{padding: 2rem;}
+.section{margin-bottom: 2.5rem;}
+.section-title{
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: .5rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+.info-grid{
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 1.5rem;
+	margin-bottom: 2rem;
+	background-color: #999;
+}
+.info-card{
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+.info-card h3{
+	color: #000;
+	margin-bottom: 1rem;
+
+    padding-bottom: .5rem;
+	border-bottom: 1px solid #ddd;
+	text-align: left;
+}
+.info-item{
+    margin-bottom: .8rem;
+    display: flex;
+    align-items: center;
+}
+.info-label{
+    font-weight: 600;
+    min-width: 120px;
+    color: #555;
+    text-align: left;
+}
+.info-value{flex: 1;text-align: left;}
+.date-picker{display: flex;gap: .5rem;align-items: center;}
+.date-input, .time-input, .order-number-input{
+    padding: .5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+.date-input{width: 150px;}
+.time-input{width: 100px;}
+.order-number-input{width: 200px;}
+.editable{
+    background-color: #fffde7;
+    padding: .2rem .5rem;
+    border-radius: 3px;
+    border: 1px dashed #ffc107;
+    min-height: 30px;
+    display: inline-block;
+    min-width: 100px;
+}
+.itinerary-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    table-layout: fixed;
+}
+.itinerary-table th, .itinerary-table td{
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    position: relative;
+}
+.itinerary-table th{background-color: #f2f2f2;font-weight: 600;}
+.itinerary-table tr:hover{background-color: #f9f9f9;}
+.day-number{
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    background-color: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    margin-right: 10px;
+}
+.price-input{
+    width: 80px;
+    padding: .3rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    text-align: right;
+}
+.price-display{
+	font-weight: 600;
+	color: #000;
+	min-width: 60px;
+	display: inline-block;
+	text-align: right;
+}
+.price-section{
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+}
+.price-item{
+    display: flex;
+    justify-content: space-between;
+    padding: .8rem 0;
+    border-bottom: 1px dashed #ddd;
+}
+.price-item:last-child{border-bottom: none;}
+.total-price{
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary);
+    text-align: right;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--primary);
+}
+.passenger-list{margin-top: 1.5rem;}
+.passenger-item{
+    padding: .8rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.passenger-item:last-child{border-bottom: none;}
+.passenger-number{font-weight: 600;}
+footer{
+    text-align: center;
+    padding: 2rem;
+    background-color: #2c3e50;
+    color: #fff;
+}
+.output-area{
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    white-space: pre-wrap;
+    font-family: monospace;
+    line-height: 1.8;
+    max-height: 500px;
+    overflow-y: auto;
+    text-align: left;
+}
+.cost-breakdown{
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f0f8ff;
+    border-radius: 8px;
+    border-left: 4px solid #4682b4;
+}
+.cost-breakdown h3{
+    color: #4682b4;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+.cost-item{
+    display: flex;
+    justify-content: space-between;
+    padding: .5rem 0;
+    border-bottom: 1px dashed #ccc;
+}
+.cost-item:last-child{border-bottom: none;}
+.extra-service-item{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .8rem;
+    padding: .5rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+.extra-service-name{flex: 1;margin-right: 1rem;}
+.extra-service-price{
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.guide-options, .car-options{
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.guide-option, .car-option{
+    flex: 1;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all .3s;
+}
+.guide-option.selected, .car-option.selected{
+	border-color: var(--primary);
+	background-color: #57B4FF;
+}
+.guide-option h4, .car-option h4{
+	color: #000;
+
+    margin-bottom: .5rem;
+	text-align: left;
+}
+.itinerary-actions{
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+.day-actions{display: flex;gap: .5rem;}
+.unit-input, .extra-service-date{
+    width: 80px;
+    padding: .3rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+.phone-input{display: flex;align-items: center;gap: .5rem;}
+.country-code{
+    width: 100px;
+    padding: .3rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+.phone-number{
+    flex: 1;
+    padding: .3rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+.passenger-actions{
+    margin-left: auto;
+    display: flex;
+    gap: .5rem;
+}
+/* 强制让导出区域所有按钮横向并列 */
+.section:last-of-type .btn-box {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    width: 100% !important;
+    margin-top: 1rem !important;
+}
+
+
+@media (max-width: 768px){
+    .info-grid{grid-template-columns: 1fr;}
+    .guide-options, .car-options{flex-direction: column;}
+    .passenger-item{
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .passenger-actions{
+        margin-left: 0;
+        margin-top: .5rem;
+        width: 100%;
+        justify-content: flex-end;
+    }
+    .date-picker{
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+.container .content .section .section-title {
+	color: #000;
+}
+.container .content .section .cost-breakdown .guide-options #no-guide h4 {
+	color: #000;
+}
