@@ -6,29 +6,70 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* 样式同你原来，省略节省篇幅；下面只贴核心脚本 */
+/* ========== 基础重置 ========== */
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
 body{background:#f5f7fa;color:#333;line-height:1.6;padding:20px}
 .container{max-width:1400px;margin:0 auto}
+
+/* ========== 头部 ========== */
 header{background:linear-gradient(to right,#2c3e50,#34495e);color:#fff;padding:1.5rem;margin-bottom:2rem;border-radius:10px;text-align:center}
 h1{font-size:2rem;margin-bottom:.5rem}
 .subtitle{font-size:1.1rem;opacity:.9}
+
+/* ========== 过滤器 ========== */
 .filters{background:#fff;border-radius:10px;padding:1.5rem;margin-bottom:2rem;display:flex;gap:1rem;flex-wrap:wrap}
 .filter-item{flex:1;min-width:200px}
 .filter-item label{display:block;margin-bottom:.5rem;font-weight:600}
 .filter-item input,.filter-item select{width:100%;padding:.8rem;border:1px solid #ddd;border-radius:4px}
 .btn{display:inline-block;padding:.8rem 1.5rem;background:#3498db;color:#fff;border:none;border-radius:5px;cursor:pointer;margin-right:.5rem}
 .btn:hover{background:#2980b9}
-.cards-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.5rem;margin-bottom:2rem}
-.itinerary-card{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 4px rgba(0,0,0,.1);transition:transform .3s,box-shadow .3s}
+
+/* ========== 网格容器（强制等高） ========== */
+.cards-container{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
+    gap:1.5rem;
+    margin-bottom:2rem;
+    align-items:stretch;
+}
+
+/* ========== 卡片（强制等高 + 内部列布局） ========== */
+.itinerary-card{
+    background:#fff;
+    border-radius:10px;
+    padding:1.5rem;
+    box-shadow:0 2px 4px rgba(0,0,0,.1);
+    transition:transform .3s,box-shadow .3s;
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    min-height:620px;
+    position:relative;
+}
 .itinerary-card:hover{transform:translateY(-5px);box-shadow:0 6px 12px rgba(0,0,0,.15)}
-.card-header{border-bottom:2px solid #3498db;padding-bottom:1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center}
+
+/* 右上角时间状态 */
+.time-status{
+    position:absolute;
+    top:8px;
+    right:8px;
+    color:#fff;
+    padding:4px 8px;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:600;
+}
+
+/* 内容区自动撑开 */
+.card-section{flex:1}
+
+/* 其余样式保持原样 */
 .order-number-section{background:linear-gradient(135deg,#e3f2fd,#bbdefb);padding:1rem;border-radius:8px;margin-bottom:1rem;border-left:4px solid #1976d2}
 .order-number-label{font-weight:600;color:#1976d2;margin-right:.5rem}
 .order-number-value{font-family:'Courier New',monospace;font-size:1.1rem;font-weight:bold;color:#1565c0}
 .copy-order-btn{background:#1976d2;color:#fff;border:none;padding:.3rem .6rem;border-radius:4px;cursor:pointer;font-size:.8rem;margin-left:.5rem}
 .copy-order-btn:hover{background:#1565c0}
-.card-section{margin-bottom:1rem}
+.card-header{border-bottom:2px solid #3498db;padding-bottom:1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center}
 .card-section h3{color:#2c3e50;margin-bottom:.5rem;font-size:1rem;border-bottom:1px solid #ecf0f1}
 .info-item{display:flex;margin-bottom:.5rem;font-size:.9rem}
 .info-label{font-weight:600;color:#555;min-width:80px;margin-right:.5rem}
@@ -43,7 +84,11 @@ h1{font-size:2rem;margin-bottom:.5rem}
 .error-message{text-align:center;padding:2rem;color:#e74c3c;grid-column:1/-1}
 .record-count{background:#fff;padding:1rem;border-radius:8px;text-align:center;font-weight:600;margin-bottom:1rem}
 .price-tag{font-weight:700;color:#27ae60}
-@media(max-width:768px){.filters{flex-direction:column}.filter-item{width:100%}.cards-container{grid-template-columns:1fr}}
+@media(max-width:768px){
+    .filters{flex-direction:column}
+    .filter-item{width:100%}
+    .cards-container{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -57,7 +102,12 @@ h1{font-size:2rem;margin-bottom:.5rem}
         <div class="filter-item"><label>结束日期</label><input type="date" id="date-to"></div>
         <div class="filter-item">
             <label>导游类型</label>
-            <select id="guide-type"><option value="">全部</option><option value="no">无需导游</option><option value="chinese">中文导游</option><option value="english">英文导游</option></select>
+            <select id="guide-type">
+                <option value="">全部</option>
+                <option value="no">无需导游</option>
+                <option value="chinese">中文导游</option>
+                <option value="english">英文导游</option>
+            </select>
         </div>
         <div class="filter-item">
             <button class="btn" onclick="loadItineraries()"><i class="fas fa-search"></i> 搜索</button>
@@ -65,7 +115,9 @@ h1{font-size:2rem;margin-bottom:.5rem}
         </div>
     </div>
 
-    <div class="cards-container" id="cards-container"><div class="loading"><i class="fas fa-spinner fa-spin"></i> 正在连接Supabase...</div></div>
+    <div class="cards-container" id="cards-container">
+        <div class="loading"><i class="fas fa-spinner fa-spin"></i> 正在连接Supabase...</div>
+    </div>
 
     <div class="navigation">
         <button class="nav-btn" id="prev-btn" onclick="prevPage()" disabled><i class="fas fa-chevron-left"></i> 上一页</button>
@@ -104,7 +156,27 @@ async function initSupabase() {
     }
 }
 
-/* ========== 加载数据（排序固定） ========== */
+/* ========== 右上角时间状态 ========== */
+function getTimeStatus(start, end) {
+    const today = new Date();
+    const s = new Date(start);
+    const e = new Date(end);
+    if (today < s) return { text: '未开始', color: '#f39c12' }; // 黄
+    if (today > e) return { text: '已结束', color: '#e74c3c' }; // 红
+    return { text: '进行中', color: '#27ae60' };               // 绿
+}
+
+/* ========== 状态权重：越小越靠前 ========== */
+function statusWeight(start, end) {
+    const today = new Date();
+    const s = new Date(start);
+    const e = new Date(end);
+    if (today > e) return 3; // 已结束
+    if (today < s) return 2; // 未开始
+    return 1;                // 进行中
+}
+
+/* ========== 加载数据（单号升序 + 日期预处理 + 状态排序） ========== */
 async function loadItineraries() {
     if (!supabase && !await initSupabase()) return;
     showLoading('正在加载数据...');
@@ -117,9 +189,7 @@ async function loadItineraries() {
     let q = supabase
         .from('itineraries')
         .select(`*,itinerary_days(*),passengers(*),extra_services(*)`)
-        .order('start_date', { ascending: true })      // ① 日期升序
-        .order('order_number', { ascending: true })
-
+        .order('order_number', { ascending: true });
 
     if (search)    q = q.or(`order_number.ilike.%${search}%,service_type.ilike.%${search}%`);
     if (dateFrom)  q = q.gte('start_date', dateFrom);
@@ -132,14 +202,17 @@ async function loadItineraries() {
         showError('加载失败: ' + error.message); return;
     }
 
+    const safeDate = d => d || '';
     itinerariesData = (data || []).map(it => ({
         ...it,
-        start_date: it.start_date || '',
-        end_date:   it.end_date   || '',
-        itinerary_days: (it.itinerary_days || [])
-            .map(d => ({ ...d, date: d.date || '' }))
-            .sort((a, b) => a.day_number - b.day_number) // ✅ 按天数升序
+        start_date: safeDate(it.start_date),
+        end_date:   safeDate(it.end_date),
+        itinerary_days: (it.itinerary_days || []).map(d => ({ ...d, date: safeDate(d.date) }))
     }));
+
+    /* ✅ 按状态排序：进行中→未开始→已结束 */
+    itinerariesData.sort((a, b) => statusWeight(a.start_date, a.end_date) - statusWeight(b.start_date, b.end_date));
+
     updateRecordCount();
     currentPage = 1;
     renderItineraryCards();
@@ -147,7 +220,6 @@ async function loadItineraries() {
 }
 
 /* ========== 小工具 ========== */
-function safeDate(d) { return d || ''; }
 function clearFilters() {
     ['search', 'date-from', 'date-to', 'guide-type'].forEach(id => document.getElementById(id).value = '');
     loadItineraries();
@@ -170,12 +242,22 @@ function nextPage() {
     if (currentPage < total) { currentPage++; renderItineraryCards(); updateNavigation(); }
 }
 
-/* ========== 渲染卡片 ========== */
+/* ========== 渲染卡片（含右上角时间状态） ========== */
 function renderItineraryCards() {
     const start = (currentPage - 1) * itemsPerPage;
     const arr   = itinerariesData.slice(start, start + itemsPerPage);
-    const html  = arr.map(it => `
-        <div class="itinerary-card">
+    const guideMap = { no: '无需导游', chinese: '中文导游', english: '英文导游' };
+
+    const html = arr.map(it => {
+        const status = getTimeStatus(it.start_date, it.end_date);
+        const guideText = guideMap[it.guide_type] || it.guide_type || '无';
+        return `
+        <div class="itinerary-card" style="position:relative">
+            <!-- 右上角时间状态 -->
+            <div class="time-status" style="background:${status.color}">
+                ${status.text}
+            </div>
+
             <div class="order-number-section">
                 <div style="display:flex;justify-content:space-between;align-items:center">
                     <div><span class="order-number-label">单号:</span><span class="order-number-value">${it.order_number || '未分配'}</span></div>
@@ -188,7 +270,7 @@ function renderItineraryCards() {
                 <div class="info-item"><span class="info-label">出行日期:</span><span>${it.start_date} - ${it.end_date}</span></div>
                 <div class="info-item"><span class="info-label">航班号:</span><span>${it.flight_number || '无'}</span></div>
                 <div class="info-item"><span class="info-label">抵达时间:</span><span>${it.arrival_time || '无'}</span></div>
-                <div class="info-item"><span class="info-label">导游类型:</span><span>${{no: '无需导游', chinese: '中文导游', english: '英文导游'}[it.guide_type] || it.guide_type || '无'}</span></div>
+                <div class="info-item"><span class="info-label">导游类型:</span><span>${guideText}</span></div>
                 <div class="info-item"><span class="info-label">酒店标准:</span><span>${it.hotel_standard || '无'} - ${it.room_type || '无'}</span></div>
                 <div class="info-item"><span class="info-label">总价格:</span><span class="price-tag">${it.total_price || '0'} USD</span></div>
             </div>
@@ -208,7 +290,9 @@ function renderItineraryCards() {
                 ${it.extra_services?.filter(s => s.is_selected).length ? it.extra_services.filter(s => s.is_selected).map(s => `
                     <div class="service-item"><span>${s.service_name || '无名称'}</span><span>${s.price || '0'} USD${s.unit || ''}</span></div>`).join('') : '<p>无附加服务</p>'}
             </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
+
     document.getElementById('cards-container').innerHTML = html || '<div class="loading">当前页面无数据</div>';
 }
 
