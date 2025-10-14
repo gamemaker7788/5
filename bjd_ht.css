@@ -1,0 +1,125 @@
+/* ==========  CSS 变量（主题token） ========== */
+:root{
+  --primary: #6366f1;           /* 主色 indigo-500 */
+  --primary-dark: #4f46e5;      /* indigo-600 */
+  --success: #10b981;           /* emerald-500 */
+  --danger: #ef4444;            /* red-500 */
+  --warning: #f59e0b;           /* amber-500 */
+  --gray-1: #f9fafb;
+  --gray-2: #f3f4f6;
+  --gray-3: #e5e7eb;
+  --gray-9: #111827;
+  --radius: 8px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========  全局重置  ========== */
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif;}
+body{background:var(--gray-1);color:var(--gray-9);line-height:1.6;-webkit-font-smoothing:antialiased;}
+
+/* ==========  容器  ========== */
+.container{max-width:1400px;margin:0 auto;padding:20px;}
+
+/* ==========  头部  ========== */
+header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#fff;padding:2rem;border-radius:var(--radius);box-shadow:var(--shadow-md);}
+.header-content{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;}
+h1{font-size:2rem;font-weight:700;}
+.subtitle{font-size:1.1rem;opacity:.9;}
+
+/* ==========  按钮（新） ========== */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:.6rem 1.25rem;
+  border:none;border-radius:var(--radius);
+  font-size:.95rem;font-weight:500;
+  cursor:pointer;transition:var(--transition);
+  box-shadow:var(--shadow-sm);
+}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.btn:active{transform:translateY(0);}
+
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);}
+
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{background:#059669;}
+
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{background:#dc2626;}
+
+.btn-warning{background:var(--warning);color:#fff;}
+.btn-warning:hover{background:#d97706;}
+
+.btn-add{background:var(--primary);color:#fff;}
+.btn-add:hover{background:var(--primary-dark);}
+
+.btn-export{background:var(--success);color:#fff;}
+.btn-export:hover{background:#059669;}
+
+/* 新添加的按钮组（天数/乘客/服务） */
+.action-buttons{display:flex;gap:.5rem;flex-wrap:wrap;}
+.action-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:.4rem .8rem;
+  border:none;border-radius:var(--radius);
+  font-size:.85rem;font-weight:500;
+  cursor:pointer;transition:var(--transition);
+  box-shadow:var(--shadow-sm);
+}
+.action-btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.action-btn.btn-view{background:#3b82f6;color:#fff;}
+.action-btn.btn-edit{background:var(--warning);color:#fff;}
+.action-btn.btn-delete{background:var(--danger);color:#fff;}
+.action-btn.move-up{background:#06b6d4;color:#fff;}
+.action-btn.move-down{background:#10b981;color:#fff;}
+.action-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ==========  筛选栏  ========== */
+.filters{background:#fff;border-radius:var(--radius);padding:1.5rem;margin-bottom:2rem;box-shadow:var(--shadow-sm);display:flex;gap:1rem;flex-wrap:wrap;}
+.filter-item{flex:1;min-width:200px;display:flex;flex-direction: column;}
+.filter-item label{margin-bottom:.5rem;font-weight:500;font-size:.9rem;color:var(--gray-9);}
+.filter-item input,.filter-item select{width:100%;padding:.65rem .75rem;border:1px solid var(--gray-3);border-radius:var(--radius);transition:var(--transition);}
+.filter-item input:focus,.filter-item select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15);}
+
+/* ==========  表格  ========== */
+.data-table{background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:1rem;text-align:left;border-bottom:1px solid var(--gray-3);}
+th{background:var(--gray-2);font-weight:600;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em;}
+tr:hover{background:var(--gray-1);}
+.skeleton td{padding:2rem;}
+.loading{display:inline-block;width:20px;height:20px;border:3px solid var(--gray-3);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ==========  分页  ========== */
+.pagination{display:flex;justify-content:center;gap:.5rem;margin-top:1.5rem;}
+.page-btn{padding:.5rem 1rem;border:1px solid var(--gray-3);background:#fff;border-radius:var(--radius);cursor:pointer;transition:var(--transition);}
+.page-btn:hover{background:var(--gray-2);}
+.page-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+/* ==========  模态框  ========== */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;overflow-y:auto;backdrop-filter:blur(4px);}
+.modal-content{background:#fff;margin:3vh auto;padding:2rem;border-radius:var(--radius);width:90%;max-width:1000px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-md);}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--gray-3);}
+.close{font-size:1.5rem;color:var(--gray-9);cursor:pointer;transition:var(--transition);}
+.close:hover{color:var(--danger);}
+
+/* ==========  行内编辑元素  ========== */
+.inline-edit,.inline-select{display:inline-block;padding:4px 6px;border:1px dashed var(--primary);border-radius:4px;background:#fff;min-width:60px;transition:var(--transition);}
+.inline-edit:focus,.inline-select:focus{outline:none;border-style:solid;background:#f5f3ff;}
+.inline-select{border-style:solid;}
+
+/* ==========  子表表格  ========== */
+.itinerary-table{width:100%;border-collapse:collapse;margin-top:1rem;}
+.itinerary-table th,.itinerary-table td{padding:.75rem;border-bottom:1px solid var(--gray-3);}
+.itinerary-table th{background:var(--gray-2);font-size:.85rem;}
+.itinerary-actions{display:flex;justify-content:flex-end;margin-bottom:.75rem;}
+
+/* ==========  响应式  ========== */
+@media(max-width:768px){
+  .filters{flex-direction:column;}
+  .filter-item{width:100%;}
+  .header-content{flex-direction:column;align-items:flex-start;}
+}

@@ -4,47 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>格鲁吉亚行程管理系统 - 后台</title>
+
+  <!-- 外部依赖 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
-    body{background:#f5f7fa;color:#333;line-height:1.6}
-    .container{max-width:1400px;margin:0 auto;padding:20px}
-    header{background:linear-gradient(to right,#2c3e50,#34495e);color:#fff;padding:1.5rem;margin-bottom:2rem;border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,.1)}
-    .header-content{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
-    h1{font-size:2rem}.subtitle{font-size:1.1rem;opacity:.9}
-    .btn{display:inline-block;padding:.8rem 1.5rem;background:#3498db;color:#fff;border:none;border-radius:5px;cursor:pointer;transition:background .3s;margin-right:.5rem}
-    .btn:hover{background:#2980b9}.btn-success{background:#27ae60}.btn-danger{background:#e74c3c}.btn-warning{background:#f39c12}
-    .status-message{padding:1rem;border-radius:4px;margin-top:1rem;display:none}
-    .status-success{background:#d4edda;color:#155724;border:1px solid #c3e6cb}.status-error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
-    .filters{background:#fff;border-radius:10px;padding:1.5rem;margin-bottom:2rem;box-shadow:0 2px 4px rgba(0,0,0,.1);display:flex;gap:1rem;flex-wrap:wrap}
-    .filter-item{flex:1;min-width:200px}
-    .filter-item label{display:block;margin-bottom:.5rem;font-weight:600}
-    .filter-item input,.filter-item select{width:100%;padding:.8rem;border:1px solid #ddd;border-radius:4px}
-    .data-table{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.1);overflow-x:auto}
-    table{width:100%;border-collapse:collapse}th,td{padding:1rem;text-align:left;border-bottom:1px solid #eee}
-    th{background:#f8f9fa;font-weight:600;position:sticky;top:0}
-    tr:hover{background:#f8f9fa}.action-buttons{display:flex;gap:.5rem}
-    .action-btn{padding:.4rem .8rem;border:none;border-radius:3px;cursor:pointer;font-size:.9rem;color:#fff}
-    .btn-view{background:#3498db}.btn-edit{background:#f39c12}.btn-delete{background:#e74c3c}
-    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;overflow-y:auto}
-    .modal-content{background:#fff;margin:2rem auto;padding:2rem;border-radius:10px;width:90%;max-width:1000px;max-height:90vh;overflow-y:auto}
-    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #eee}
-    .close{font-size:1.5rem;cursor:pointer}
-    .detail-section{margin-bottom:2rem}.detail-section h3{color:#2c3e50;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid #3498db}
-    .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin-bottom:1rem}
-    .detail-item{margin-bottom:.8rem}.detail-label{font-weight:600;color:#555}
-    .loading{text-align:center;padding:2rem;color:#7f8c8d}
-    .pagination{display:flex;justify-content:center;gap:.5rem;margin-top:1rem}
-    .page-btn{padding:.5rem 1rem;border:1px solid #ddd;background:#fff;cursor:pointer;border-radius:3px}
-    .page-btn.active{background:#3498db;color:#fff;border-color:#3498db}
-    .form-group{margin-bottom:1.5rem}
-    .form-group label{display:block;margin-bottom:.5rem;font-weight:600}
-    .form-control{width:100%;padding:.8rem;border:1px solid #ddd;border-radius:4px;font-size:1rem}
-    .form-row{display:flex;gap:1rem;margin-bottom:1rem}
-    .form-col{flex:1}@media(max-width:768px){.filters,.form-row{flex-direction:column}.filter-item,.form-col{width:100%}}
-    .day-box,.passenger-box,.service-box{background:#f8f9fa;border:1px solid #dee2e6;border-radius:5px;padding:1rem;margin-bottom:1rem}
-  </style>
+
+  <!-- 本项目样式 -->
+  <link rel="stylesheet" href="bjd_ht.css"/>
 </head>
 <body>
   <div class="container">
@@ -58,6 +24,7 @@
       </div>
     </header>
 
+    <!-- 搜索 / 筛选 -->
     <div class="filters">
       <div class="filter-item">
         <label for="search">搜索</label>
@@ -83,10 +50,13 @@
       <div class="filter-item">
         <label style="visibility:hidden;">操作</label>
         <button class="btn" onclick="loadItineraries()">搜索</button>
-        <button class="btn btn-success" onclick="exportData()"><i class="fas fa-download"></i> 导出数据</button>
+        <button class="btn btn-success" onclick="exportData()">
+          <i class="fas fa-download"></i> 导出数据
+        </button>
       </div>
     </div>
 
+    <!-- 数据表格 -->
     <div class="data-table">
       <table>
         <thead>
@@ -102,32 +72,41 @@
             <th width="18%">操作</th>
           </tr>
         </thead>
-        <tbody id="data-body"><tr><td colspan="9" class="loading">加载中...</td></tbody>
+        <tbody id="data-body">
+          <tr><td colspan="9" class="loading">加载中...</td></tr>
+        </tbody>
       </table>
       <div class="pagination" id="pagination"></div>
     </div>
   </div>
 
-  <!-- 详情模态框 -->
+  <!-- 模态框 -->
   <div id="detail-modal" class="modal">
     <div class="modal-content">
-      <div class="modal-header"><h2>行程详情</h2><span class="close" onclick="closeModal('detail-modal')">&times;</span></div>
+      <div class="modal-header">
+        <h2>行程详情</h2>
+        <span class="close" onclick="closeModal('detail-modal')">&times;</span>
+      </div>
       <div id="modal-body"></div>
     </div>
   </div>
 
-  <!-- 编辑模态框 -->
   <div id="edit-modal" class="modal">
     <div class="modal-content">
-      <div class="modal-header"><h2>编辑行程</h2><span class="close" onclick="closeModal('edit-modal')">&times;</span></div>
+      <div class="modal-header">
+        <h2>编辑行程</h2>
+        <span class="close" onclick="closeModal('edit-modal')">&times;</span>
+      </div>
       <div id="edit-body"></div>
     </div>
   </div>
 
-  <!-- 删除确认模态框 -->
   <div id="delete-modal" class="modal">
     <div class="modal-content">
-      <div class="modal-header"><h2>确认删除</h2><span class="close" onclick="closeModal('delete-modal')">&times;</span></div>
+      <div class="modal-header">
+        <h2>确认删除</h2>
+        <span class="close" onclick="closeModal('delete-modal')">&times;</span>
+      </div>
       <p>确定要删除这条行程记录吗？此操作不可恢复。</p>
       <div style="text-align:right;margin-top:1.5rem;">
         <button class="btn" onclick="closeModal('delete-modal')">取消</button>
@@ -136,489 +115,7 @@
     </div>
   </div>
 
-  <script>
-    /* ---------- Supabase 配置 ---------- */
-    const SUPABASE_URL = 'https://fezxhcmiefdbvqmhczut.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    /* ---------- 全局变量 ---------- */
-    let currentPage = 1, itemsPerPage = 10, totalRecords = 0, currentDeleteId = null;
-    let editDataCache = {};
-
-    /* ---------- 工具函数 ---------- */
-    const fmtDate = d => d ? new Date(d).toLocaleDateString('zh-CN') : '无';
-    const fmtDateTime = d => d ? new Date(d).toLocaleString('zh-CN') : '无';
-    const guideTxt = t => ({no:'无需导游',chinese:'中文导游',english:'英文导游'}[t]||t||'无');
-    const debounce = (fn,wait)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),wait)}};
-    const showStatus = (msg, type = 'success') => {
-      const box = document.createElement('div');
-      box.className = `status-message ${type==='success'?'status-success':'status-error'}`; 
-      box.textContent = msg;
-      document.body.appendChild(box); 
-      setTimeout(()=>box.remove(), 5000);
-    };
-
-    /* ---------- 加载主表 ---------- */
-    async function loadItineraries() {
-      try {
-        const search = document.getElementById('search').value.trim();
-        const dateFrom = document.getElementById('date-from').value;
-        const dateTo = document.getElementById('date-to').value;
-        const guideType = document.getElementById('guide-type').value;
-
-        let query = supabase.from('itineraries').select('*', { count: 'exact' });
-        
-        if (search) {
-          query = query.or(`order_number.ilike.%${search}%,service_type.ilike.%${search}%,flight_number.ilike.%${search}%`);
-        }
-        if (dateFrom) query = query.gte('start_date', dateFrom);
-        if (dateTo) query = query.lte('end_date', dateTo);
-        if (guideType) query = query.eq('guide_type', guideType);
-
-        const { count, error: countError } = await query;
-        if (countError) throw countError;
-        totalRecords = count;
-        document.getElementById('record-count').textContent = `${totalRecords} 条记录`;
-
-        const { data, error } = await query
-          .order('created_at', { ascending: false })
-          .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
-        if (error) throw error;
-
-        renderItineraries(data || []);
-        renderPagination();
-      } catch (error) {
-        console.error('加载数据失败:', error);
-        showStatus('加载数据失败: ' + error.message, 'error');
-        document.getElementById('data-body').innerHTML = '<tr><td colspan="9" class="loading">加载失败，请检查Supabase配置</td></tr>';
-      }
-    }
-
-    /* ---------- 渲染主表 ---------- */
-    function renderItineraries(data) {
-      const tbody = document.getElementById('data-body');
-      if (!data.length) { 
-        tbody.innerHTML = '<tr><td colspan="9" class="loading">无记录</td></tr>'; 
-        return; 
-      }
-      tbody.innerHTML = data.map(r => `
-        <tr>
-          <td><strong>${r.order_number || '无单号'}</strong></td>
-          <td>${r.service_type||'无'}</td>
-          <td>${fmtDate(r.start_date)} - ${fmtDate(r.end_date)}</td>
-          <td>${r.flight_number||'无'}</td>
-          <td>${r.car_type||'无'}</td>
-          <td>${guideTxt(r.guide_type)}</td>
-          <td>${r.total_price||0} USD</td>
-          <td>${fmtDateTime(r.created_at)}</td>
-          <td>
-            <div class="action-buttons">
-              <button class="action-btn btn-view" onclick="viewDetails('${r.id}')"><i class="fas fa-eye"></i> 查看</button>
-              <button class="action-btn btn-edit" onclick="editItinerary('${r.id}')"><i class="fas fa-edit"></i> 编辑</button>
-              <button class="action-btn btn-delete" onclick="showDeleteModal('${r.id}')"><i class="fas fa-trash"></i> 删除</button>
-            </div>
-          </td>
-        </tr>`).join('');
-    }
-
-    /* ---------- 分页 ---------- */
-    function renderPagination() {
-      const totalPages = Math.ceil(totalRecords / itemsPerPage);
-      const p = document.getElementById('pagination');
-      if (totalPages <= 1) { p.innerHTML = ''; return; }
-      let html = '';
-      if (currentPage > 1) html += `<button class="page-btn" onclick="changePage(${currentPage - 1})">上一页</button>`;
-      for (let i = 1; i <= totalPages; i++) {
-        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-      }
-      if (currentPage < totalPages) html += `<button class="page-btn" onclick="changePage(${currentPage + 1})">下一页</button>`;
-      p.innerHTML = html;
-    }
-
-    function changePage(page) { 
-      currentPage = page; 
-      loadItineraries(); 
-    }
-
-    /* ---------- 查看详情 ---------- */
-    async function viewDetails(id) {
-      try {
-        const [itineraryRes, daysRes, passengersRes, servicesRes] = await Promise.all([
-          supabase.from('itineraries').select('*').eq('id', id).single(),
-          supabase.from('itinerary_days').select('*').eq('itinerary_id', id).order('day_number'),
-          supabase.from('passengers').select('*').eq('itinerary_id', id),
-          supabase.from('extra_services').select('*').eq('itinerary_id', id)
-        ]);
-        if (itineraryRes.error) throw itineraryRes.error;
-        renderDetails(itineraryRes.data, daysRes.data || [], passengersRes.data || [], servicesRes.data || []);
-        openModal('detail-modal');
-      } catch (err) { 
-        showStatus('加载详情失败: ' + err.message, 'error'); 
-      }
-    }
-
-    function renderDetails(itinerary, days, passengers, services) {
-      document.getElementById('modal-body').innerHTML = `
-        <div class="detail-section">
-          <h3>基本信息</h3>
-          <div class="detail-grid">
-            <div class="detail-item"><span class="detail-label">单号：</span><strong>${itinerary.order_number || '无单号'}</strong></div>
-            <div class="detail-item"><span class="detail-label">服务类型：</span>${itinerary.service_type||'无'}</div>
-            <div class="detail-item"><span class="detail-label">出行日期：</span>${fmtDate(itinerary.start_date)} - ${fmtDate(itinerary.end_date)}</div>
-            <div class="detail-item"><span class="detail-label">抵达时间：</span>${itinerary.arrival_time||'无'}</div>
-            <div class="detail-item"><span class="detail-label">航班号：</span>${itinerary.flight_number||'无'}</div>
-            <div class="detail-item"><span class="detail-label">车型：</span>${itinerary.car_type||'无'}</div>
-            <div class="detail-item"><span class="detail-label">酒店标准：</span>${itinerary.hotel_standard||'无'}</div>
-            <div class="detail-item"><span class="detail-label">房型：</span>${itinerary.room_type||'无'}</div>
-            <div class="detail-item"><span class="detail-label">导游类型：</span>${guideTxt(itinerary.guide_type)}</div>
-            <div class="detail-item"><span class="detail-label">总价格：</span>${itinerary.total_price||0} USD</div>
-            <div class="detail-item"><span class="detail-label">创建时间：</span>${fmtDateTime(itinerary.created_at)}</div>
-          </div>
-        </div>
-        <div class="detail-section"><h3>行程安排 (${days.length} 天)</h3>
-          ${days.map(d=>`<div style="margin-bottom:1.5rem;padding:1rem;background:#f8f9fa;border-radius:5px;">
-            <div><strong>第${d.day_number}天 (${d.date})</strong></div>
-            <div class="detail-item"><span class="detail-label">行程：</span>${d.plan||'无'}</div>
-            <div class="detail-item"><span class="detail-label">住宿：</span>${d.accommodation||'无'}</div>
-            <div class="detail-item"><span class="detail-label">行程报价：</span>${d.plan_price||0} USD</div>
-            <div class="detail-item"><span class="detail-label">住宿报价：</span>${d.accommodation_price||0} USD</div>
-          </div>`).join('')}
-        </div>
-        <div class="detail-section"><h3>乘客信息 (${passengers.length} 人)</h3>
-          ${passengers.map((p,i)=>`<div style="margin-bottom:1rem;padding:1rem;background:#f8f9fa;border-radius:5px;">
-            <div><strong>乘客 ${i+1}</strong></div>
-            <div class="detail-item"><span class="detail-label">姓名：</span>${p.name||'无'}</div>
-            <div class="detail-item"><span class="detail-label">电话：</span>${p.country_code||''}${p.phone?'-'+p.phone:'无'}</div>
-          </div>`).join('')}
-        </div>
-        <div class="detail-section"><h3>附加服务</h3>
-          ${services.filter(s=>s.is_selected).length ? services.filter(s=>s.is_selected).map(s=>`<div style="margin-bottom:1rem;padding:1rem;background:#f8f9fa;border-radius:5px;">
-            <div class="detail-item"><span class="detail-label">服务名称：</span>${s.service_name||'无'}</div>
-            <div class="detail-item"><span class="detail-label">价格：</span>${s.price||0} USD${s.unit||''}</div>
-          </div>`).join('') : '<p>无附加服务</p>'}
-        </div>`;
-    }
-
-    /* ---------- 编辑功能 ---------- */
-    async function editItinerary(id) {
-      try {
-        const [itineraryRes, daysRes, passengersRes, servicesRes] = await Promise.all([
-          supabase.from('itineraries').select('*').eq('id', id).single(),
-          supabase.from('itinerary_days').select('*').eq('itinerary_id', id).order('day_number'),
-          supabase.from('passengers').select('*').eq('itinerary_id', id),
-          supabase.from('extra_services').select('*').eq('itinerary_id', id)
-        ]);
-        if (itineraryRes.error) throw itineraryRes.error;
-        editDataCache = { 
-          itinerary: itineraryRes.data, 
-          days: daysRes.data || [], 
-          passengers: passengersRes.data || [], 
-          services: servicesRes.data || [] 
-        };
-        renderFullEditForm();
-        openModal('edit-modal');
-      } catch (err) { 
-        showStatus('加载编辑数据失败: ' + err.message, 'error'); 
-      }
-    }
-
-    function renderFullEditForm() {
-      const r = editDataCache.itinerary;
-      document.getElementById('edit-body').innerHTML = `
-        <form id="edit-form" onsubmit="saveFullEdit(event)">
-          <input type="hidden" name="id" value="${r.id}"/>
-          <h4>主信息</h4>
-          <div class="form-row">
-            <div class="form-col">
-              <div class="form-group">
-                <label>单号</label>
-                <input type="text" name="order_number" class="form-control" value="${r.order_number||''}" placeholder="可不填，自动生成"/>
-              </div>
-            </div>
-            <div class="form-col">
-              <div class="form-group">
-                <label>服务类型</label>
-                <input type="text" name="service_type" class="form-control" value="${r.service_type||''}" required/>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-col">
-              <div class="form-group">
-                <label>车型</label>
-                <input type="text" name="car_type" class="form-control" value="${r.car_type||''}"/>
-              </div>
-            </div>
-            <div class="form-col">
-              <div class="form-group">
-                <label>导游类型</label>
-                <select name="guide_type" class="form-control">
-                  <option value="no" ${r.guide_type==='no'?'selected':''}>无需导游</option>
-                  <option value="chinese" ${r.guide_type==='chinese'?'selected':''}>中文导游</option>
-                  <option value="english" ${r.guide_type==='english'?'selected':''}>英文导游</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-col">
-              <div class="form-group">
-                <label>开始日期</label>
-                <input type="date" name="start_date" class="form-control" value="${r.start_date}" required/>
-              </div>
-            </div>
-            <div class="form-col">
-              <div class="form-group">
-                <label>结束日期</label>
-                <input type="date" name="end_date" class="form-control" value="${r.end_date}" required/>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-col">
-              <div class="form-group">
-                <label>航班号</label>
-                <input type="text" name="flight_number" class="form-control" value="${r.flight_number||''}"/>
-              </div>
-            </div>
-            <div class="form-col">
-              <div class="form-group">
-                <label>抵达时间</label>
-                <input type="time" name="arrival_time" class="form-control" value="${r.arrival_time||''}"/>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-col">
-              <div class="form-group">
-                <label>酒店标准</label>
-                <input type="text" name="hotel_standard" class="form-control" value="${r.hotel_standard||''}"/>
-              </div>
-            </div>
-            <div class="form-col">
-              <div class="form-group">
-                <label>房型</label>
-                <input type="text" name="room_type" class="form-control" value="${r.room_type||''}"/>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-col">
-              <div class="form-group">
-                <label>总价格 (USD)</label>
-                <input type="number" name="total_price" class="form-control" value="${r.total_price||0}" step="0.01" min="0" required/>
-              </div>
-            </div>
-          </div>
-
-          <h4>行程安排（逐天编辑）</h4>
-          <div id="day-list"></div>
-
-          <h4>乘客信息（逐人编辑）</h4>
-          <div id="passenger-list"></div>
-
-          <h4>附加服务（逐项编辑）</h4>
-          <div id="service-list"></div>
-
-          <div style="text-align:right;margin-top:1.5rem;">
-            <button type="button" class="btn" onclick="closeModal('edit-modal')">取消</button>
-            <button type="submit" class="btn btn-success">保存全部更改</button>
-          </div>
-        </form>`;
-      renderDayList(); renderPassengerList(); renderServiceList();
-    }
-    
-    function renderDayList() {
-      const box = document.getElementById('day-list');
-      box.innerHTML = editDataCache.days.map((d,i)=>`
-        <div class="day-box">
-          <h5>第 ${d.day_number} 天（${d.date}）</h5>
-          <input type="hidden" name="day_id_${i}" value="${d.id}"/>
-          <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>行程计划</label><textarea name="day_plan_${i}" class="form-control">${d.plan||''}</textarea></div></div>
-            <div class="form-col"><div class="form-group"><label>住宿</label><input type="text" name="day_accommodation_${i}" class="form-control" value="${d.accommodation||''}"/></div></div>
-          </div>
-          <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>行程报价 (USD)</label><input type="number" name="day_plan_price_${i}" class="form-control" value="${d.plan_price||0}" step="0.01"/></div></div>
-            <div class="form-col"><div class="form-group"><label>住宿报价 (USD)</label><input type="number" name="day_accommodation_price_${i}" class="form-control" value="${d.accommodation_price||0}" step="0.01"/></div></div>
-          </div>
-        </div>`).join('');
-    }
-    
-    function renderPassengerList() {
-      const box = document.getElementById('passenger-list');
-      box.innerHTML = editDataCache.passengers.map((p,i)=>`
-        <div class="passenger-box">
-          <h5>乘客 ${i+1}</h5>
-          <input type="hidden" name="passenger_id_${i}" value="${p.id}"/>
-          <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>姓名</label><input type="text" name="passenger_name_${i}" class="form-control" value="${p.name||''}"/></div></div>
-            <div class="form-col"><div class="form-group"><label>国家码</label><input type="text" name="passenger_country_code_${i}" class="form-control" value="${p.country_code||''}" placeholder="+995"/></div></div>
-            <div class="form-col"><div class="form-group"><label>电话</label><input type="text" name="passenger_phone_${i}" class="form-control" value="${p.phone||''}"/></div></div>
-          </div>
-        </div>`).join('');
-    }
-    
-    function renderServiceList() {
-      const box = document.getElementById('service-list');
-      box.innerHTML = editDataCache.services.map((s,i)=>`
-        <div class="service-box">
-          <h5>${s.service_name}</h5>
-          <input type="hidden" name="service_id_${i}" value="${s.id}"/>
-          <div class="form-row">
-            <div class="form-col"><div class="form-group"><label>价格 (USD)</label><input type="number" name="service_price_${i}" class="form-control" value="${s.price||0}" step="0.01"/></div></div>
-            <div class="form-col"><div class="form-group"><label>选中</label><select name="service_selected_${i}" class="form-control"><option value="true" ${s.is_selected?'selected':''}>是</option><option value="false" ${!s.is_selected?'selected':''}>否</option></select></div></div>
-          </div>
-        </div>`).join('');
-    }
-    
-    async function saveFullEdit(e) {
-      e.preventDefault();
-      const f = e.target, d = Object.fromEntries(new FormData(f));
-      try {
-        await supabase.from('itineraries').update({
-          order_number: d.order_number,
-          service_type: d.service_type,
-          car_type: d.car_type,
-          guide_type: d.guide_type,
-          start_date: d.start_date,
-          end_date: d.end_date,
-          flight_number: d.flight_number,
-          arrival_time: d.arrival_time,
-          hotel_standard: d.hotel_standard,
-          room_type: d.room_type,
-          total_price: parseFloat(d.total_price) || 0,
-          updated_at: new Date().toISOString()
-        }).eq('id', d.id);
-
-        for (let i = 0; i < editDataCache.days.length; i++) {
-          await supabase.from('itinerary_days').update({
-            plan: d[`day_plan_${i}`],
-            accommodation: d[`day_accommodation_${i}`],
-            plan_price: parseFloat(d[`day_plan_price_${i}`]) || 0,
-            accommodation_price: parseFloat(d[`day_accommodation_price_${i}`]) || 0
-          }).eq('id', d[`day_id_${i}`]);
-        }
-
-        for (let i = 0; i < editDataCache.passengers.length; i++) {
-          await supabase.from('passengers').update({
-            name: d[`passenger_name_${i}`],
-            country_code: d[`passenger_country_code_${i}`],
-            phone: d[`passenger_phone_${i}`]
-          }).eq('id', d[`passenger_id_${i}`]);
-        }
-
-        for (let i = 0; i < editDataCache.services.length; i++) {
-          await supabase.from('extra_services').update({
-            price: parseFloat(d[`service_price_${i}`]) || 0,
-            is_selected: d[`service_selected_${i}`] === 'true'
-          }).eq('id', d[`service_id_${i}`]);
-        }
-
-        showStatus('全部更新成功！'); 
-        closeModal('edit-modal'); 
-        loadItineraries();
-      } catch (err) { 
-        showStatus('更新失败: ' + err.message, 'error'); 
-      }
-    }
-
-    /* ---------- 删除 ---------- */
-    function showDeleteModal(id) { 
-      currentDeleteId = id; 
-      openModal('delete-modal'); 
-    }
-    
-    async function confirmDelete() {
-      if (!currentDeleteId) return;
-      try {
-        await Promise.all([
-          supabase.from('itineraries').delete().eq('id', currentDeleteId),
-          supabase.from('itinerary_days').delete().eq('itinerary_id', currentDeleteId),
-          supabase.from('passengers').delete().eq('itinerary_id', currentDeleteId),
-          supabase.from('extra_services').delete().eq('itinerary_id', currentDeleteId)
-        ]);
-        showStatus('删除成功！'); 
-        closeModal('delete-modal'); 
-        loadItineraries();
-      } catch (err) { 
-        showStatus('删除失败: ' + err.message, 'error'); 
-      }
-    }
-
-    /* ---------- 导出 CSV ---------- */
-    async function exportData() {
-      try {
-        const { data, error } = await supabase.from('itineraries').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        const head = ['单号', '服务类型', '开始日期', '结束日期', '抵达时间', '航班号', '车型', '酒店标准', '房型', '导游类型', '总价格', '创建时间'];
-        const body = data.map(r => [
-          r.order_number || '无单号', 
-          r.service_type, 
-          r.start_date, 
-          r.end_date, 
-          r.arrival_time || '', 
-          r.flight_number || '', 
-          r.car_type || '',
-          r.hotel_standard || '', 
-          r.room_type || '', 
-          guideTxt(r.guide_type), 
-          r.total_price || 0, 
-          fmtDateTime(r.created_at)
-        ]);
-        const csv = [head, ...body].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a'), url = URL.createObjectURL(blob);
-        link.setAttribute('href', url); 
-        link.setAttribute('download', '格鲁吉亚行程数据导出.csv'); 
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link); 
-        link.click(); 
-        link.remove();
-      } catch (err) { 
-        showStatus('导出失败: ' + err.message, 'error'); 
-      }
-    }
-
-    /* ---------- 模态框开关 ---------- */
-    function openModal(id) { 
-      document.getElementById(id).style.display = 'block'; 
-    }
-    
-    function closeModal(id) { 
-      document.getElementById(id).style.display = 'none'; 
-    }
-
-    /* ---------- 初始化 ---------- */
-    document.addEventListener('DOMContentLoaded', () => {
-      testSupabaseConnection();
-      loadItineraries();
-      ['search','date-from','date-to','guide-type'].forEach(id=>{
-        document.getElementById(id).addEventListener('input', debounce(loadItineraries, 500));
-      });
-      window.addEventListener('click', e => {
-        document.querySelectorAll('.modal').forEach(m => { 
-          if (e.target === m) m.style.display = 'none'; 
-        });
-      });
-    });
-
-    /* ---------- 测试 Supabase 连接 ---------- */
-    async function testSupabaseConnection() {
-      try {
-        const { data, error } = await supabase.from('itineraries').select('count');
-        if (error) {
-          console.error('Supabase 连接失败:', error);
-          showStatus('Supabase 连接失败，请检查配置', 'error');
-        } else {
-          console.log('Supabase 连接成功');
-        }
-      } catch (error) {
-        console.error('Supabase 连接测试失败:', error);
-        showStatus('Supabase 连接测试失败: ' + error.message, 'error');
-      }
-    }
-  </script>
+  <!-- 业务脚本 -->
+  <script src="bjd_ht.js"></script>
 </body>
 </html>
