@@ -116,6 +116,24 @@ tr:hover{background:var(--gray-1);}
 .itinerary-table th,.itinerary-table td{padding:.75rem;border-bottom:1px solid var(--gray-3);}
 .itinerary-table th{background:var(--gray-2);font-size:.85rem;}
 .itinerary-actions{display:flex;justify-content:flex-end;margin-bottom:.75rem;}
+/* 强制解锁弹窗内输入 */
+.modal-content .inline-edit,
+.modal-content .inline-select,
+.modal-content input[type="text"],
+.modal-content input[type="checkbox"] {
+  pointer-events: auto !important;
+  user-select: text !important;
+}
+
+/* 防止遮罩层挡住 */
+.modal {
+  z-index: 1000;
+}
+
+.modal-content {
+  z-index: 1001;
+  position: relative;
+}
 
 /* ==========  响应式  ========== */
 @media(max-width:768px){

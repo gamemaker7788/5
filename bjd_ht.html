@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>格鲁吉亚行程管理系统 - 后台</title>
 
-  <!-- 外部依赖 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- 本项目样式 -->
   <link rel="stylesheet" href="bjd_ht.css"/>
 </head>
 <body>
@@ -80,42 +76,18 @@
     </div>
   </div>
 
-  <!-- 模态框 -->
-  <div id="detail-modal" class="modal">
+  <!-- 通用模态框 -->
+  <div id="modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>行程详情</h2>
-        <span class="close" onclick="closeModal('detail-modal')">&times;</span>
+        <h2 id="modal-title">标题</h2>
+        <span class="close" onclick="closeModal()">&times;</span>
       </div>
       <div id="modal-body"></div>
     </div>
   </div>
 
-  <div id="edit-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>编辑行程</h2>
-        <span class="close" onclick="closeModal('edit-modal')">&times;</span>
-      </div>
-      <div id="edit-body"></div>
-    </div>
-  </div>
-
-  <div id="delete-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>确认删除</h2>
-        <span class="close" onclick="closeModal('delete-modal')">&times;</span>
-      </div>
-      <p>确定要删除这条行程记录吗？此操作不可恢复。</p>
-      <div style="text-align:right;margin-top:1.5rem;">
-        <button class="btn" onclick="closeModal('delete-modal')">取消</button>
-        <button class="btn btn-danger" onclick="confirmDelete()">确认删除</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 业务脚本 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="bjd_ht.js"></script>
 </body>
 </html>
