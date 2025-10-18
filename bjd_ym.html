@@ -94,7 +94,7 @@ h1{font-size:2rem;margin-bottom:.5rem}
 <body>
 <div class="container">
     <header><h1>格鲁吉亚行程管理系统</h1><p class="subtitle">行程数据卡片展示</p></header>
-    <div class="record-count" id="record-count">0条记录</div>
+    <div class="record-count" id="record-count">0 条记录</div>
 
     <div class="filters">
         <div class="filter-item"><label>搜索单号/服务类型</label><input type="text" id="search" placeholder="输入单号或服务类型..."></div>
@@ -116,7 +116,7 @@ h1{font-size:2rem;margin-bottom:.5rem}
     </div>
 
     <div class="cards-container" id="cards-container">
-        <div class="loading"><i class="fas fa-spinner fa-spin"></i> 正在连接Supabase...</div>
+        <div class="loading"><i class="fas fa-spinner fa-spin"></i> 正在连接 Supabase...</div>
     </div>
 
     <div class="navigation">
@@ -207,7 +207,9 @@ async function loadItineraries() {
         ...it,
         start_date: safeDate(it.start_date),
         end_date:   safeDate(it.end_date),
-        itinerary_days: (it.itinerary_days || []).map(d => ({ ...d, date: safeDate(d.date) }))
+        itinerary_days: (it.itinerary_days || [])
+          .sort((a, b) => a.day_number - b.day_number)   // ⬅️ 修复天数乱序
+          .map(d => ({ ...d, date: safeDate(d.date) }))
     }));
 
     /* ✅ 按状态排序：进行中→未开始→已结束 */
