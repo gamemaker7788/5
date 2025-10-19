@@ -1,16 +1,13 @@
-/*  ==========  完整版 bjd.js（兼容旧表，不新增列）  ==========  */
-
-/********************  价格配置  ********************/
+/*  ---------------- 价格配置 ----------------  */
 const PRICE = {
   CAR_5_SEAT: 0, CAR_7_SEAT: 50, CAR_MULTI_SEAT: 80,
   GUIDE_CHINESE: 150, GUIDE_ENGLISH: 100,
   WINE_TASTING: 40, TICKETS: 80,
   DEFAULT_PLAN_PRICE: 0, DEFAULT_HOTEL_PRICE: 0,
-  DEFAULT_CAR_RENT_PRICE: 120,
-  DEFAULT_CAR_CHANGE_PRICE: 50
+  DEFAULT_CAR_RENT_PRICE: 120, DEFAULT_CAR_CHANGE_PRICE: 50
 };
 
-/********************  全局变量  ********************/
+/*  ---------------- 全局变量 ----------------  */
 const countryCodes = [
   {code:"+86",name:"中国"},{code:"+1",name:"美国/加拿大"},{code:"+44",name:"英国"},
   {code:"+81",name:"日本"},{code:"+82",name:"韩国"},{code:"+852",name:"香港"},
@@ -26,22 +23,53 @@ let itineraryData=[], extraServices=[
 ];
 let serviceCounter=2, supabase=null;
 
-/********************  Supabase 配置  ********************/
+/*  ---------------- Supabase 配置 ----------------  */
 const SUPABASE_URL='https://fezxhcmiefdbvqmhczut.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
 
+/*  保证先定义，后调用  */
 function initSupabase(){
-  try{ supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); return true;}
-  catch(e){ console.error(e); alert('Supabase 初始化失败: '+e.message); return false;}
+  try{
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return true;
+  }catch(e){
+    console.error(e);
+    toast('Supabase 初始化失败: ' + e.message, 'error');
+    return false;
+  }
 }
 
-/********************  工具函数  ********************/
+/*  页内提醒函数（toast）  */
+function toast(msg, type = 'info', duration = 2000) {
+  const exist = document.getElementById('toast-banner');
+  if (exist) exist.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'toast-banner';
+  banner.style.cssText = `
+    position:fixed; top:12px; left:50%; transform:translateX(-50%);
+    padding:10px 22px; border-radius:6px; color:#fff; font-size:14px;
+    z-index:10000; transition:opacity .3s; box-shadow:0 2px 8px rgba(0,0,0,.25);
+    ${type === 'success' ? 'background:#52c41a;' : ''}
+    ${type === 'error'   ? 'background:#ff4d4f;' : ''}
+    ${type === 'info'    ? 'background:#1890ff;' : ''}
+  `;
+  banner.textContent = msg;
+  document.body.appendChild(banner);
+
+  setTimeout(() => {
+    banner.style.opacity = '0';
+    setTimeout(() => banner.remove(), 300);
+  }, duration);
+}
+
+/* =================  工具函数  ================= */
 function formatDate(d){
   const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${dd}`;
 }
 
-/********************  初始化  ********************/
+/* =================  初始化  ================= */
 function initializeItinerary(){
   const today=new Date(), end=new Date(); end.setDate(today.getDate()+6);
   document.getElementById('start-date').value=formatDate(today);
@@ -53,10 +81,10 @@ function initializePassengers(){
   renderPassengers();
 }
 
-/********************  行程  ********************/
+/* =================  行程  ================= */
 function addDay(){
   const start=new Date(document.getElementById('start-date').value);
-  if(isNaN(start)){ alert('请先选择有效的开始日期'); return;}
+  if(isNaN(start)){ toast('请先选择有效的开始日期','error'); return;}
   const dayNum=itineraryData.length+1;
   const d=new Date(start); d.setDate(start.getDate()+dayNum-1);
   itineraryData.push({
@@ -78,40 +106,24 @@ function renderItinerary(){
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td>${day.day}</td>
-      <td>
-        <span class="editable" contenteditable onblur="updateDayData(${i},'date',this.textContent)">${day.date}</span>
-        <div class="day-actions">
-          <button class="action-btn move-up"  ${i===0?'disabled':''}>↑</button>
+      <td><span class="editable" contenteditable onblur="updateDayData(${i},'date',this.textContent)">${day.date}</span>
+          <div class="day-actions"><button class="action-btn move-up"  ${i===0?'disabled':''}>↑</button>
           <button class="action-btn move-down" ${i===itineraryData.length-1?'disabled':''}>↓</button>
-          <button class="action-btn delete">×</button>
-        </div>
-      </td>
+          <button class="action-btn delete">×</button></div></td>
       <td><span class="editable" contenteditable onblur="updateDayData(${i},'plan',this.textContent)">${day.plan}</span></td>
       <td><input type="number" class="price-input" value="${day.planPrice}" min="0" onchange="updateDayData(${i},'planPrice',this.value)"> USD</td>
       <td><span class="editable" contenteditable onblur="updateDayData(${i},'accommodation',this.textContent)">${day.accommodation}</span></td>
       <td><input type="number" class="price-input" value="${day.accommodationPrice}" min="0" onchange="updateDayData(${i},'accommodationPrice',this.value)"> USD</td>
       <td><input type="checkbox" class="guide-checkbox" ${day.guideService?'checked':''}></td>
-
-      <!-- 车型下拉 -->
-      <td>
-        <select class="car-type-select">
-          <option value="5-seat"  ${day.carType==='5-seat'?'selected':''}>5座车</option>
-          <option value="7-seat"  ${day.carType==='7-seat'?'selected':''}>7座车</option>
-          <option value="multi-seat" ${day.carType==='multi-seat'?'selected':''}>多座车</option>
-        </select>
-      </td>
-
-      <!-- 包车勾选+价格 -->
-      <td>
-        <input type="checkbox" class="car-rent-checkbox" ${day.carRent?'checked':''}>
-        <input type="number" class="price-input car-rent-price" value="${day.carRentPrice}" min="0" step="10">
-      </td>
-
-      <!-- 换车勾选+价格 -->
-      <td>
-        <input type="checkbox" class="change-car-checkbox" ${day.changeCar?'checked':''}>
-        <input type="number" class="price-input car-change-price" value="${day.carChangePrice}" min="0" step="10">
-      </td>`;
+      <td><select class="car-type-select">
+            <option value="5-seat"  ${day.carType==='5-seat'?'selected':''}>5座车</option>
+            <option value="7-seat"  ${day.carType==='7-seat'?'selected':''}>7座车</option>
+            <option value="multi-seat" ${day.carType==='multi-seat'?'selected':''}>多座车</option>
+          </select></td>
+      <td><input type="checkbox" class="car-rent-checkbox" ${day.carRent?'checked':''}>
+          <input type="number" class="price-input car-rent-price" value="${day.carRentPrice}" min="0" step="10"></td>
+      <td><input type="checkbox" class="change-car-checkbox" ${day.changeCar?'checked':''}>
+          <input type="number" class="price-input car-change-price" value="${day.carChangePrice}" min="0" step="10"></td>`;
     tbody.appendChild(tr);
     attachItineraryRowEvents(tr,i);
   });
@@ -124,7 +136,6 @@ function attachItineraryRowEvents(tr,i){
   const gChk=tr.querySelector('.guide-checkbox');
   if(gChk) gChk.addEventListener('change',e=>updateDayGuideService(i,e.target.checked));
 
-  // 车型变化 → 自动改包车价
   tr.querySelector('.car-type-select').addEventListener('change',e=>{
     const base=PRICE.DEFAULT_CAR_RENT_PRICE;
     let add=0;
@@ -138,7 +149,6 @@ function attachItineraryRowEvents(tr,i){
     renderItinerary();
   });
 
-  // 包车/换车勾选
   tr.querySelector('.car-rent-checkbox').addEventListener('change',e=>{
     itineraryData[i].carRent=e.target.checked; calculateTotal(); updateOutput();
   });
@@ -146,7 +156,6 @@ function attachItineraryRowEvents(tr,i){
     itineraryData[i].changeCar=e.target.checked; calculateTotal(); updateOutput();
   });
 
-  // 价格手动微调
   tr.querySelector('.car-rent-price').addEventListener('input',e=>{
     itineraryData[i].carRentPrice=parseFloat(e.target.value)||0; calculateTotal(); updateOutput();
   });
@@ -166,9 +175,9 @@ function updateDayNumbers(){
     day.date=`${d.getMonth()+1}月${d.getDate()}日`;
   });
 }
-function removeDay(i){ if(itineraryData.length>1){ itineraryData.splice(i,1); updateDayNumbers(); renderItinerary();} else alert('至少需要保留一天的行程');}
+function removeDay(i){ if(itineraryData.length>1){ itineraryData.splice(i,1); updateDayNumbers(); renderItinerary();} else toast('至少需要保留一天的行程','error');}
 
-/********************  导游  ********************/
+/* =================  导游  ================= */
 function selectGuide(type){
   selectedGuide=type;
   document.querySelectorAll('.guide-option').forEach(o=>o.classList.remove('selected'));
@@ -180,10 +189,10 @@ function updateSelectedGuideDays(){
   itineraryData.forEach(d=>{ if(d.guideService) selectedGuideDays.push(d.day);});
 }
 
-/********************  附加服务  ********************/
+/* =================  附加服务  ================= */
 function updateExtraService(id){
   const s=extraServices.find(x=>x.id===id);
-  if(s){ s.checked=document.getElementById(id).checked; calculateTotal(); updateOutput();}
+  if(s){ s.checked=document.getElementById(id).checked; calculateTotal(); updateOutput(); }
 }
 function updateCost(id){
   const s=extraServices.find(x=>x.id===id);
@@ -222,17 +231,18 @@ function removeService(id){
   calculateTotal(); updateOutput();
 }
 
-/********************  乘客  ********************/
+/* =================  乘客  ================= */
 function addPassenger(){
   const id=passengers.length?Math.max(...passengers.map(p=>p.id))+1:1;
   passengers.push({id,name:'新乘客',countryCode:'+86',phone:'未提供'});
   renderPassengers();
 }
 function removePassenger(i){
-  if(passengers.length>1){ passengers.splice(i,1); renderPassengers();} else alert('至少需要保留一位乘客');}
+  if(passengers.length>1){ passengers.splice(i,1); renderPassengers();} else toast('至少需要保留一位乘客','error');
+}
 function updatePassenger(i,f,v){
   if(f==='phone'){
-    if(!/^\d*$/.test(v)){ alert('电话号码只能包含数字'); return;}
+    if(!/^\d*$/.test(v)){ toast('电话号码只能包含数字','error'); return;}
     if(v.trim()==='') v='未提供';
   }
   passengers[i][f]=v; updateOutput();
@@ -266,12 +276,11 @@ function renderPassengers(){
   updateOutput();
 }
 
-/********************  计算 / 输出  ********************/
+/* =================  计算 / 输出  ================= */
 function calculateTotal(){
   let travel=0, hotel=0;
   itineraryData.forEach(d=>{ travel+=parseFloat(d.planPrice)||0; hotel+=parseFloat(d.accommodationPrice)||0;});
 
-  // 车型差价
   let carTypeCost=0;
   itineraryData.forEach(d=>{
     switch(d.carType){
@@ -282,11 +291,9 @@ function calculateTotal(){
   });
   travel+=carTypeCost;
 
-  // 包车：未勾选=0
   const carRentCost = itineraryData
     .filter(d => d.carRent)
     .reduce((sum,d) => sum + (parseFloat(d.carRentPrice)||0), 0);
-  // 换车：未勾选=0
   const carChangeCost = itineraryData
     .filter(d => d.changeCar)
     .reduce((sum,d) => sum + (parseFloat(d.carChangePrice)||0), 0);
@@ -310,7 +317,7 @@ function updateOutput(){
   const service=document.getElementById('service-type').value;
   const sDate=new Date(document.getElementById('start-date').value);
   const eDate=new Date(document.getElementById('end-date').value);
-  if(isNaN(sDate)||isNaN(eDate)){ document.getElementById('output-content').textContent='请先选择有效的开始和结束日期'; return;}
+  if(isNaN(sDate)||isNaN(eDate)){ toast('请先选择有效的开始和结束日期','error'); return;}
   const travelDate=`${sDate.getMonth()+1}月${sDate.getDate()}日-${eDate.getMonth()+1}月${eDate.getDate()}日`;
   const arrival=document.getElementById('arrival-time').value;
   const flight=document.getElementById('flight-number').value||'无';
@@ -348,8 +355,8 @@ function updateOutput(){
   const extraTot=document.getElementById('extra-total').textContent;
   const tot=document.getElementById('total-price').textContent;
 
-  document.getElementById('output-content').textContent=
-`单号：${order}
+  document.getElementById('output-content').textContent=`
+单号：${order}
 服务类型：${service}
 预计出行日期（当地时间）：${travelDate}
 抵达时间：${arrival}
@@ -377,137 +384,248 @@ ${extra}
 ${psg}`;
 }
 
-/********************  复制 / 下载  ********************/
+/* =================  复制 / 下载 / 保存  ================= */
 function copyToClipboard(){
   const txt=document.getElementById('output-content').textContent;
-  if(!txt.trim()){ alert('请先生成内容'); return;}
-  navigator.clipboard.writeText(txt).then(()=>alert('内容已复制到剪贴板！'))
-  .catch(()=>{
-    const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-    alert('内容已复制到剪贴板！');
-  });
+  if(!txt.trim()){ toast('请先生成内容','error'); return;}
+  navigator.clipboard.writeText(txt).then(()=>toast('内容已复制到剪贴板','success'))
+  .catch(()=>{ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('内容已复制到剪贴板','success'); });
 }
 function downloadAsFile(){
   const txt=document.getElementById('output-content').textContent;
-  if(!txt.trim()){ alert('请先生成内容'); return;}
+  if(!txt.trim()){ toast('请先生成内容','error'); return;}
   const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='格鲁吉亚行程报价单.txt'; a.click();
   setTimeout(()=>URL.revokeObjectURL(url),100);
-  alert('文件下载成功！');
+  toast('文件下载成功','success');
 }
 
-/********************  Supabase 保存（只写旧表已有字段）  ********************/
-async function saveToSupabase(){
-  if(!supabase&&!initSupabase()){ alert('Supabase 初始化失败'); return;}
-  try{
-    let order=document.getElementById('order-number').value.trim();
-    const body={
-      order_number:order,
-      service_type:document.getElementById('service-type').value,
-      start_date:document.getElementById('start-date').value,
-      end_date  :document.getElementById('end-date').value,
-      arrival_time:document.getElementById('arrival-time').value,
-      flight_number:document.getElementById('flight-number').value||'无',
-      hotel_standard:document.getElementById('hotel-standard').value,
-      room_type:document.getElementById('room-type').value,
-      guide_type:selectedGuide,
-      total_price:document.getElementById('total-price').textContent,
-      created_at:new Date().toISOString(),
-      updated_at:new Date().toISOString()
-    };
-    const {data:it,error:itErr}=await supabase.from('itineraries').insert([body]).select().single();
-    if(itErr) throw itErr;
-    const itineraryId=it.id;
+/* =========================================================
+   完整 saveToSupabase()：带表单预校验 + 失败原因翻译
+   ========================================================= */
+async function saveToSupabase() {
+  /* -------------- 1. 前端预校验 -------------- */
+  if (!validateForm()) return;          // 未通过则内部已 toast，直接返回
+  /* -------------- 2. 初始化遮罩&进度条 -------------- */
+  if (!supabase && !initSupabase()) { toast('Supabase 初始化失败', 'error'); return; }
 
-    // 只写旧表存在的列，去掉 car_type / car_rent_price / car_change_price
-    for(const d of itineraryData){
-      // 在 plan 字段末尾追加（包车/换车）标记
-      const carTag=`${d.carRent?'包车':''}${d.carRent&&d.changeCar?'/':''}${d.changeCar?'换车':''}`;
-      const planText=`${d.plan}${carTag?`（${carTag}）`:''}`;
-      const {error:dayErr}=await supabase.from('itinerary_days').insert({
-        itinerary_id:itineraryId,
-        day_number:d.day,
-        date:d.date,
-        plan:planText, plan_price:d.planPrice,
-        accommodation:d.accommodation, accommodation_price:d.accommodationPrice,
-        guide_service:d.guideService
-      });
-      if(dayErr) throw dayErr;
-    }
-    for(const p of passengers){
-      const {error:psgErr}=await supabase.from('passengers').insert({
-        itinerary_id:itineraryId, name:p.name, country_code:p.countryCode, phone:p.phone.trim()===''?'未提供':p.phone
-      });
-      if(psgErr) throw psgErr;
-    }
-    for(const s of extraServices){
-      if(!s.checked) continue;
-      const {error:svcErr}=await supabase.from('extra_services').insert({
-        itinerary_id:itineraryId, service_name:s.name, price:s.price, unit:s.unit, is_selected:s.checked
-      });
-      if(svcErr) throw svcErr;
-    }
-    alert(`数据保存成功！单号:${order}, 保存ID:${itineraryId}`);
-  }catch(e){ console.error(e); alert('保存失败: '+e.message);}
+  const mask = document.createElement('div'); mask.id = 'save-mask';
+  mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;padding:28px 38px;border-radius:8px;text-align:center;font-size:15px;line-height:1.8;box-shadow:0 4px 20px rgba(0,0,0,.25)';
+  const title = document.createElement('div');
+  const percent = document.createElement('div');
+  percent.style.cssText = 'margin-top:10px;font-size:20px;font-weight:bold;color:#004edd';
+  const barWrap = document.createElement('div');
+  barWrap.style.cssText = 'margin-top:8px;width:260px;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden';
+  const bar = document.createElement('div');
+  bar.style.cssText = 'height:100%;background:#004edd;width:0%;transition:width .2s';
+  barWrap.appendChild(bar);
+  box.append(title, percent, barWrap); mask.append(box); document.body.append(mask);
+
+  const updateProgress = (v, msg = '') => {
+    percent.textContent = msg ? `${msg} (${Math.round(v)} %)` : `${Math.round(v)} %`;
+    bar.style.width = `${Math.round(v)} %`;
+  };
+  const fail = (stage, err) => {
+    title.textContent = '保存失败'; title.style.color = '#ff4d4f'; bar.style.background = '#ff4d4f';
+    const friendly = translateError(err.code, err.message, stage);
+    percent.textContent = friendly;
+    setTimeout(() => mask.remove(), 4000);
+    toast(`保存失败：${friendly}`, 'error');
+    throw new Error(friendly);
+  };
+
+  /* -------------- 3. 小工具 -------------- */
+  const toInt = v => parseInt(String(v).replace(/[^0-9.-]/g, ''), 10) || 0;
+
+  /* =====================================================
+     阶段①：主表 itineraries
+     ===================================================== */
+  title.textContent = '正在保存主表 itineraries…'; updateProgress(5);
+  const orderNumber = document.getElementById('order-number').value.trim();
+  const { data: itData, error: itErr } = await supabase
+    .from('itineraries')
+    .insert([{
+      order_number: orderNumber,
+      service_type: document.getElementById('service-type').value,
+      start_date: document.getElementById('start-date').value,
+      end_date: document.getElementById('end-date').value,
+      arrival_time: document.getElementById('arrival-time').value,
+      flight_number: document.getElementById('flight-number').value || '无',
+      hotel_standard: document.getElementById('hotel-standard').value,
+      room_type: document.getElementById('room-type').value,
+      guide_type: selectedGuide,
+      total_price: toInt(document.getElementById('total-price').textContent),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }])
+    .select()
+    .single();
+  if (itErr) return fail('itineraries 表', itErr);
+  const itineraryId = itData.id;
+  updateProgress(15);
+
+  /* =====================================================
+     阶段②：itinerary_days 子表
+     ===================================================== */
+  title.textContent = '正在保存行程天数…';
+  const totalTasks = itineraryData.length + passengers.length + extraServices.filter(s => s.checked).length;
+  let done = 0;
+  for (const d of itineraryData) {
+    const { error: dayErr } = await supabase.from('itinerary_days').insert({
+      itinerary_id: itineraryId,
+      day_number: toInt(d.day),
+      date: d.date,
+      plan: d.plan,
+      plan_price: toInt(d.planPrice),
+      accommodation: d.accommodation,
+      accommodation_price: toInt(d.accommodationPrice),
+      guide_service: d.guideService
+    });
+    if (dayErr) return fail(`itinerary_days 表（第${d.day}天）`, dayErr);
+    done++; updateProgress((done / totalTasks) * 100);
+  }
+
+  /* =====================================================
+     阶段③：passengers 表
+     ===================================================== */
+  title.textContent = '正在保存乘客信息…';
+  for (const p of passengers) {
+    const { error: psgErr } = await supabase.from('passengers').insert({
+      itinerary_id: itineraryId,
+      name: p.name,
+      country_code: p.countryCode,
+      phone: p.phone.trim() === '' ? '未提供' : p.phone
+    });
+    if (psgErr) return fail(`passengers 表（乘客 ${p.name}）`, psgErr);
+    done++; updateProgress((done / totalTasks) * 100);
+  }
+
+  /* =====================================================
+     阶段④：extra_services 表
+     ===================================================== */
+  title.textContent = '正在保存附加服务…';
+  for (const s of extraServices) {
+    if (!s.checked) continue;
+    const { error: svcErr } = await supabase.from('extra_services').insert({
+      itinerary_id: itineraryId,
+      service_name: s.name,
+      price: toInt(s.price),
+      unit: s.unit,
+      is_selected: s.checked
+    });
+    if (svcErr) return fail(`extra_services 表（${s.name}）`, svcErr);
+    done++; updateProgress((done / totalTasks) * 100);
+  }
+
+  /* =====================================================
+     全部完成
+     ===================================================== */
+  title.textContent = '保存完成！';
+  percent.textContent = '100 %'; bar.style.width = '100%';
+  setTimeout(() => {
+    mask.remove();
+    toast(`数据保存成功！\n单号：${orderNumber}\n保存ID：${itineraryId}`, 'success');
+  }, 400);
 }
 
-/********************  页面入口 & 事件绑定  ********************/
-document.addEventListener('DOMContentLoaded',()=>{
-  try{
-    initializeItinerary(); initializePassengers(); selectGuide('no'); initSupabase(); calculateTotal(); updateOutput();
-  }catch(e){ console.error(e); alert('页面初始化失败: '+e.message);}
-});
+/* =========================================================
+   以下两个辅助函数也一并放入 bjd.js 即可
+   ========================================================= */
+function validateForm() {
+  const tips = [];
+  const order = document.getElementById('order-number').value.trim();
+  if (!order) tips.push('请填写"单号"');
+  else if (order.length > 30) tips.push('"单号"不能超过30字符');
 
-/* 导游按钮点击切换 */
-document.querySelectorAll('.guide-option').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    const type=btn.dataset.type;
-    selectGuide(type);
+  const sDate = document.getElementById('start-date').value;
+  const eDate = document.getElementById('end-date').value;
+  if (!sDate || !eDate) tips.push('请选择"出行日期"');
+  else if (new Date(eDate) < new Date(sDate)) tips.push('"结束日期"不能早于"开始日期"');
+
+  itineraryData.forEach((d, i) => {
+    if (isNaN(+d.planPrice) || d.planPrice === '') tips.push(`「第${i + 1}天行程报价」只能填数字`);
+    if (isNaN(+d.accommodationPrice) || d.accommodationPrice === '') tips.push(`「第${i + 1}天住宿报价」只能填数字`);
   });
+
+  passengers.forEach((p, i) => {
+    if (!p.name.trim()) tips.push(`第${i + 1}位乘客「姓名」不能为空`);
+    if (p.phone.length > 20) tips.push(`乘客「${p.name}」电话超长（>20字符）`);
+  });
+
+  if (tips.length) {
+    toast(`请检查：\n${tips.join('\n')}`, 'error');
+    return false;
+  }
+  return true;
+}
+
+function translateError(code, msg, stage) {
+  const fieldMap = {
+    order_number: '单号',
+    day_number: '天数序号',
+    plan_price: '行程报价',
+    accommodation_price: '住宿报价',
+    phone: '电话',
+    service_name: '附加服务名称'
+  };
+  if (code === '23505') return `${fieldMap[msg.match(/ $(.*?)$/)?.[1]] || '字段'}已存在，请更换！`;
+  if (code === '23502') return `${fieldMap[msg.match(/column "(.*?)"/)?.[1]] || '字段'}不能为空！`;
+  if (code === '22001') return `${fieldMap[msg.match(/column "(.*?)"/)?.[1]] || '字段'}文字超长！`;
+  if (code === '22P02' || code === '22007') return '填了非数字内容，请检查数字字段！';
+  return `${stage} 保存失败：${msg}`;
+}
+
+
+/*  页面入口  */
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    initializeItinerary();
+    initializePassengers();
+    selectGuide('no');
+    initSupabase();   // ✅ 函数已定义，不会报错
+    calculateTotal();
+    updateOutput();
+  } catch (e) {
+    console.error(e);
+    toast('页面初始化失败: ' + e.message, 'error');
+  }
+});
+/* 导游按钮 */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.guide-option');
+  if (btn) { const type = btn.dataset.type; selectGuide(type); }
 });
 
-/* 顶部批量改车型按钮栏（HTML 里自己放） */
-['5-seat','7-seat','multi-seat'].forEach(type=>{
-  const btnId=type==='multi-seat'?'batch-car-m':`batch-car-${type.charAt(0)}`;
-  document.getElementById(btnId)?.addEventListener('click',()=>{
-    itineraryData.forEach(d=>{ d.carType=type; });
+/* 批量改车型 */
+['5-seat', '7-seat', 'multi-seat'].forEach(type => {
+  const btnId = type === 'multi-seat' ? 'batch-car-m' : `batch-car-${type.charAt(0)}`;
+  document.getElementById(btnId)?.addEventListener('click', () => {
+    itineraryData.forEach(d => { d.carType = type; });
     renderItinerary();
   });
 });
 
 /* 常规按钮 */
-document.getElementById('add-day-btn')?.addEventListener('click',addDay);
-document.getElementById('add-passenger-btn')?.addEventListener('click',addPassenger);
-document.getElementById('add-service-btn')?.addEventListener('click',addNewService);
-document.getElementById('update-output-btn')?.addEventListener('click',updateOutput);
-document.getElementById('copy-btn')?.addEventListener('click',copyToClipboard);
-document.getElementById('download-btn')?.addEventListener('click',downloadAsFile);
-document.getElementById('save-supabase-btn')?.addEventListener('click',saveToSupabase);
+['add-day-btn', 'add-passenger-btn', 'add-service-btn', 'update-output-btn', 'copy-btn', 'download-btn', 'save-supabase-btn']
+  .forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => {
+      if (id === 'add-day-btn') addDay();
+      if (id === 'add-passenger-btn') addPassenger();
+      if (id === 'add-service-btn') addNewService();
+      if (id === 'update-output-btn') updateOutput();
+      if (id === 'copy-btn') copyToClipboard();
+      if (id === 'download-btn') downloadAsFile();
+      if (id === 'save-supabase-btn') saveToSupabase();
+    });
+  });
 
 /* 附加服务初始绑定 */
-document.getElementById('wine-tasting')?.addEventListener('change',()=>updateExtraService('wine-tasting'));
-document.getElementById('tickets')?.addEventListener('change',()=>updateExtraService('tickets'));
-document.getElementById('wine-price')?.addEventListener('input',()=>updateCost('wine-tasting'));
-document.getElementById('tickets-price')?.addEventListener('input',()=>updateCost('tickets'));
-document.getElementById('wine-unit')?.addEventListener('input',()=>updateCost('wine-tasting'));
-document.getElementById('tickets-unit')?.addEventListener('input',()=>updateCost('tickets'));
-document.querySelectorAll('[data-remove]').forEach(btn=>{
-  btn.addEventListener('click',e=>removeService(e.target.closest('button').dataset.remove));
-});
-/******************************************************************
- *  导游选择修复：事件委托，确保随时可切换
- ******************************************************************/
-document.addEventListener('DOMContentLoaded', () => {
-  // 初始化导游按钮样式
-  selectGuide('no');
-
-  // 用事件委托，保证动态生成的导游按钮也能响应
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.guide-option');
-    if (!btn) return;          // 点的不是导游按钮，直接忽略
-    const type = btn.dataset.type;
-    if (!type) return;
-    selectGuide(type);         // 切换导游类型+刷新总价+输出
-  });
+['wine-tasting', 'tickets'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', () => updateExtraService(id));
+  document.getElementById(`${id}-price`)?.addEventListener('input', () => updateCost(id));
+  document.getElementById(`${id}-unit`)?.addEventListener('input', () => updateCost(id));
+  document.querySelector(`button[data-remove="${id}"]`)?.addEventListener('click', () => removeService(id));
 });
