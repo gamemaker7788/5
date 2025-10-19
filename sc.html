@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>网站收藏夹</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root{--primary:#4facfe;--danger:#ff4757;--success:#2ed573;--gray:#718096;}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+    body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px;}
+    .card{background:#fff;border-radius:16px;max-width:900px;margin:auto;padding:30px;box-shadow:0 20px 40px rgba(0,0,0,.15);}
+    h1{margin-bottom:20px;text-align:center;color:#2d3748;}
+    .form{display:flex;gap:12px;margin-bottom:25px;flex-wrap:wrap;}
+    input{flex:1;padding:12px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;transition:border .3s;}
+    input:focus{outline:none;border-color:var(--primary);}
+    button{padding:12px 20px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-weight:600;cursor:pointer;transition:transform .2s;}
+    button:hover{transform:translateY(-2px);}
+    .link-list{display:grid;gap:16px;}
+    .link-item{background:#f8f9ff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;justify-content:space-between;align-items:center;}
+    .link-info{flex:1;}
+    .link-title{font-weight:600;color:#2d3748;margin-bottom:4px;}
+    .link-url{font-size:.9em;color:var(--gray);word-break:break-all;}
+    .actions{display:flex;gap:8px;}
+    .btn-sm{padding:6px 12px;font-size:14px;}
+    .btn-success{background:var(--success);}.btn-danger{background:var(--danger);}
+    .notification{position:fixed;top:20px;right:20px;background:var(--success);color:#fff;padding:14px 20px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.2);transform:translateX(400px);transition:transform .3s;}
+    .notification.show{transform:translateX(0);}
+  /* ===== 仅新增/覆盖部分 ===== */
+    .search-box{
+      margin-bottom: 20px;
+      display:flex;
+      gap:10px;
+    }
+    .search-box input{
+      flex:1;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1><i class="fas fa-link"></i> 链接收藏夹</h1>
+
+    <!-- ① 搜索框 -->
+    <div class="search-box">
+      <input id="searchInput" type="text" placeholder="搜索名称或网址…" />
+      <button onclick="searchLinks()"><i class="fas fa-search"></i></button>
+    </div>
+
+    <!-- 新增/编辑区域 -->
+    <div class="form">
+      <input id="name" type="text" placeholder="名称" />
+      <input id="url" type="url" placeholder="https://example.com" />
+      <button onclick="addLink()"><i class="fas fa-plus"></i> 添加</button>
+    </div>
+
+    <div id="list" class="link-list"></div>
+  </div>
+
+  <!-- Supabase 客户端 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    /********************  Supabase 配置  ********************/
+    const SUPABASE_URL = 'https://fezxhcmiefdbvqmhczut.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const TABLE = 'links';
+    /*******************************************************/
+
+    let links = [];
+
+    /* ========== 搜索函数 ========== */
+    async function searchLinks(){
+      const kw = document.getElementById('searchInput').value.trim();
+      let query = supabase.from(TABLE).select('*').order('created_at',{ascending:false});
+      if(kw){
+        // ② 模糊匹配：名称 或 网址
+        query = query.or(`name.ilike.%${kw}%,url.ilike.%${kw}%`);
+      }
+      const {data,error} = await query;
+      if(error) return toast('搜索失败: '+error.message,'error');
+      links = data || [];
+      render();
+    }
+
+    /* 其余函数几乎不变，仅把 load() 换成 searchLinks() 即可 */
+    async function addLink(){
+      const name = document.getElementById('name').value.trim();
+      const url  = document.getElementById('url').value.trim();
+      if(!name||!url) return toast('请填写完整','error');
+      try{ new URL(url); }catch{ return toast('无效网址','error'); }
+      const {error} = await supabase.from(TABLE).insert([{name,url}]);
+      if(error) return toast('添加失败: '+error.message,'error');
+      document.getElementById('name').value='';
+      document.getElementById('url').value='';
+      toast('添加成功');
+      searchLinks();   // 重新搜索（含空关键词=全部）
+    }
+    async function delLink(id){
+      if(!confirm('确定删除？')) return;
+      const {error} = await supabase.from(TABLE).delete().eq('id',id);
+      if(error) return toast('删除失败: '+error.message,'error');
+      toast('已删除'); searchLinks();
+    }
+    function copyLink(url){
+      navigator.clipboard.writeText(url).then(()=>toast('已复制'));
+    }
+    function render(){
+      const list = document.getElementById('list');
+      if(!links.length) return list.innerHTML='<p style="text-align:center;color:var(--gray)">暂无数据</p>';
+      list.innerHTML = links.map(l=>`
+        <div class="link-item">
+          <div class="link-info">
+            <div class="link-title">${escape(l.name)}</div>
+            <div class="link-url">${escape(l.url)}</div>
+          </div>
+          <div class="actions">
+            <button class="btn-sm btn-success" onclick="copyLink('${escape(l.url)}')">复制</button>
+            <button class="btn-sm btn-danger" onclick="delLink('${l.id}')">删除</button>
+            <a class="btn-sm btn-primary" href="${escape(l.url)}" target="_blank">访问</a>
+          </div>
+        </div>`).join('');
+    }
+    function escape(str){
+      return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function toast(msg,type='success'){
+      const n=document.createElement('div'); n.className='notification '+(type==='error'?'btn-danger':'');
+      n.textContent=msg; document.body.appendChild(n);
+      setTimeout(()=>n.classList.add('show'),10);
+      setTimeout(()=>n.remove(),2500);
+    }
+
+    /* 首次加载：显示全部 */
+    searchLinks();
+
+    /* 实时搜索：输入即触发 */
+    document.getElementById('searchInput').addEventListener('input', searchLinks);
+  </script>
+</body>
+</html>
