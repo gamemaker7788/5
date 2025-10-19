@@ -10,12 +10,10 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
 body{background:#f5f7fa;color:#333;line-height:1.6;padding:20px}
 .container{max-width:1400px;margin:0 auto}
-
 /* ========== 头部 ========== */
 header{background:linear-gradient(to right,#2c3e50,#34495e);color:#fff;padding:1.5rem;margin-bottom:2rem;border-radius:10px;text-align:center}
 h1{font-size:2rem;margin-bottom:.5rem}
 .subtitle{font-size:1.1rem;opacity:.9}
-
 /* ========== 过滤器 ========== */
 .filters{background:#fff;border-radius:10px;padding:1.5rem;margin-bottom:2rem;display:flex;gap:1rem;flex-wrap:wrap}
 .filter-item{flex:1;min-width:200px}
@@ -23,7 +21,6 @@ h1{font-size:2rem;margin-bottom:.5rem}
 .filter-item input,.filter-item select{width:100%;padding:.8rem;border:1px solid #ddd;border-radius:4px}
 .btn{display:inline-block;padding:.8rem 1.5rem;background:#3498db;color:#fff;border:none;border-radius:5px;cursor:pointer;margin-right:.5rem}
 .btn:hover{background:#2980b9}
-
 /* ========== 网格容器（强制等高） ========== */
 .cards-container{
     display:grid;
@@ -32,7 +29,6 @@ h1{font-size:2rem;margin-bottom:.5rem}
     margin-bottom:2rem;
     align-items:stretch;
 }
-
 /* ========== 卡片（强制等高 + 内部列布局） ========== */
 .itinerary-card{
     background:#fff;
@@ -47,7 +43,6 @@ h1{font-size:2rem;margin-bottom:.5rem}
     position:relative;
 }
 .itinerary-card:hover{transform:translateY(-5px);box-shadow:0 6px 12px rgba(0,0,0,.15)}
-
 /* 右上角时间状态 */
 .time-status{
     position:absolute;
@@ -59,10 +54,8 @@ h1{font-size:2rem;margin-bottom:.5rem}
     font-size:12px;
     font-weight:600;
 }
-
 /* 内容区自动撑开 */
 .card-section{flex:1}
-
 /* 其余样式保持原样 */
 .order-number-section{background:linear-gradient(135deg,#e3f2fd,#bbdefb);padding:1rem;border-radius:8px;margin-bottom:1rem;border-left:4px solid #1976d2}
 .order-number-label{font-weight:600;color:#1976d2;margin-right:.5rem}
@@ -100,6 +93,9 @@ h1{font-size:2rem;margin-bottom:.5rem}
         <div class="filter-item"><label>搜索单号/服务类型</label><input type="text" id="search" placeholder="输入单号或服务类型..."></div>
         <div class="filter-item"><label>开始日期</label><input type="date" id="date-from"></div>
         <div class="filter-item"><label>结束日期</label><input type="date" id="date-to"></div>
+        <!-- ↓↓↓↓  1. 新增"查询日期"输入框  ↓↓↓↓ -->
+        <div class="filter-item"><label>查询日期（状态基准）</label><input type="date" id="query-date"></div>
+        <!-- ↑↑↑↑  改动结束  ↑↑↑↑ -->
         <div class="filter-item">
             <label>导游类型</label>
             <select id="guide-type">
@@ -156,14 +152,15 @@ async function initSupabase() {
     }
 }
 
-/* ========== 右上角时间状态 ========== */
+/* ========== 右上角时间状态（以查询日期为基准） ========== */
 function getTimeStatus(start, end) {
-    const today = new Date();
+    const query = document.getElementById('query-date').value;  // 获取查询日期
+    const today = query ? new Date(query) : new Date();   // 有查询日期就用它，否则用今天
     const s = new Date(start);
     const e = new Date(end);
-    if (today < s) return { text: '未开始', color: '#f39c12' }; // 黄
-    if (today > e) return { text: '已结束', color: '#e74c3c' }; // 红
-    return { text: '进行中', color: '#27ae60' };               // 绿
+    if (today < s) return { text: '未开始', color: '#f39c12' };
+    if (today > e) return { text: '已结束', color: '#e74c3c' };
+    return { text: '进行中', color: '#27ae60' };
 }
 
 /* ========== 状态权重：越小越靠前 ========== */
@@ -224,6 +221,7 @@ async function loadItineraries() {
 /* ========== 小工具 ========== */
 function clearFilters() {
     ['search', 'date-from', 'date-to', 'guide-type'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('query-date').value = '';   // 清空查询日期
     loadItineraries();
 }
 function updateRecordCount() {
@@ -333,6 +331,7 @@ function useMockData() {
 document.addEventListener('DOMContentLoaded', () => {
     ['date-from', 'date-to', 'guide-type'].forEach(id => document.getElementById(id).addEventListener('change', loadItineraries));
     document.getElementById('search').addEventListener('input', debounce(loadItineraries, 500));
+    document.getElementById('query-date').addEventListener('change', renderItineraryCards);  // 监听查询日期变化
     loadItineraries();
 });
 </script>
