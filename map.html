@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <title>路线</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    html,body{margin:0;height:100%;font-family:"Segoe UI",sans-serif;background:#f5f7fa;}
+    #map{height:100%;width:100%;}
+    .ui-bar{position:absolute;top:10px;left:10px;z-index:999;background:#fff;padding:8px 12px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.2);display:flex;gap:8px;}
+    /* 输入框只读，点击即弹窗 */
+    #routeText{flex:1;padding:6px 10px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#f8f8f8;}
+    .ui-bar button{padding:6px 12px;border:none;border-radius:4px;background:#1976d2;color:#fff;cursor:pointer;}
+    /* 弹窗背景 */
+    .modal{display:none;position:fixed;z-index:2000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.4);}
+    .modal-content{background:#fff;margin:10% auto;padding:20px;border-radius:8px;width:90%;max-width:500px;}
+    .modal-header{font-size:1.2em;margin-bottom:10px;}
+    .modal textarea{width:100%;height:120px;resize:vertical;padding:8px;border:1px solid #ccc;border-radius:4px;}
+    .modal-footer{margin-top:10px;text-align:right;}
+    .modal-footer button{margin-left:8px;}
+  </style>
+</head>
+<body>
+<div class="ui-bar">
+    <input id="routeText" readonly placeholder="点击此处输入路线" />
+  <button onclick="clearRoute()">清空</button>
+    <button id="toggleBase" onclick="toggleBaseMap()">政区图</button>
+  </div>
+<div id="map"></div>
+
+  <!-- 弹窗 -->
+  <div id="routeModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">请输入路线（用"-"或"－"分隔）</div>
+      <textarea id="modalText" placeholder="例：库塔伊西 －格拉提修道院 －梅斯蒂亚 －乌树故里 －库塔伊西"></textarea>
+      <div class="modal-footer">
+        <button onclick="closeModal()">取消</button>
+        <button onclick="confirmModal()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.min.js"></script>
+  <script>
+    /* ==================== 景点级坐标库 ==================== */
+    const locationMap = {
+      "第比利斯": [41.7151, 44.8271],
+      "第比利斯老城": [41.6875, 44.8067],
+      "纳里卡拉要塞": [41.6866, 44.8044],
+      "和平桥": [41.7023, 44.7966],
+      "圣三一大教堂": [41.7053, 44.7925],
+      "硫磺浴池区": [41.6868, 44.8042],
+      "鲁斯塔维利大街": [41.7033, 44.7933],
+      "干桥市场": [41.7058, 44.7908],
+      "库塔伊西": [42.2527, 42.7005],
+      "格拉提修道院": [42.3983, 42.6936],
+      "梅斯蒂亚": [43.0467, 42.7286],
+      "乌树故里": [42.9127, 43.0116],
+      "巴统": [41.6168, 41.6367],
+      "巴统老城": [41.6183, 41.6333],
+      "阿里和尼诺雕像": [41.6178, 41.6325],
+      "欧洲广场": [41.6197, 41.6336],
+      "哥里": [41.9840, 44.1152],
+      "斯大林博物馆": [41.9856, 44.1136],
+      "哥里要塞": [41.9875, 44.1083],
+      "乌普利斯齐赫洞穴城": [41.9675, 44.1375],
+      "西格纳吉": [41.6227, 45.9228],
+      "西格纳吉长城": [41.624, 45.924],
+      "克瓦雷利": [41.9546, 45.8016],
+      "克瓦雷利湖": [41.956, 45.803],
+      "阿拉韦尔迪修道院": [41.8444, 45.3736],
+      "伊卡托修道院": [41.8869, 45.4536],
+      "施乌姆塔修道院": [41.8969, 45.4436],
+      "斯捷潘茨明达": [42.6609, 44.6411],
+      "圣三一教堂（卡兹别克）": [42.6628, 44.6044],
+      "卡兹别克山": [42.6975, 44.5467],
+      "巴库里阿尼": [41.7021, 43.5456],
+      "古达乌里": [42.5847, 44.6114],
+      "博尔若米": [41.8500, 43.5200],
+      "博尔若米峡谷": [41.8444, 43.5319],
+      "茨哈尔图博温泉": [42.3256, 42.5999],
+      "苏拉姆山口": [42.0236, 43.4986],
+      "奇阿图拉矿山小镇": [42.3156, 43.2986],
+      "帕拉瓦尼湖": [41.4733, 44.1333],
+      "塔巴茨库里湖": [41.6833, 43.0167],
+      "萨加莫湖": [41.7167, 44.0833],
+      "阿巴斯塔马尼火山温泉": [41.4167, 43.5833]
+    };
+
+    /* ---------- 底图 ---------- */
+    const layers = {
+      osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }),
+      political: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© CARTO' })
+    };
+    let currentBase = 'osm';
+    const map = L.map('map', { center: [41.7, 44.8], zoom: 7, layers: [layers.osm] });
+    const routeGroup = L.layerGroup().addTo(map);
+
+    const arrowDecorator = path => L.polylineDecorator(path, {
+      patterns: [{ offset: '100%', repeat: 0, symbol: L.Symbol.arrowHead({ pixelSize: 12, pathOptions: { fillOpacity: 1, weight: 0, color: '#1976d2' } }) }]
+    });
+
+    /* ---------- 解析城市/景点 ---------- */
+    function parseCities(text) {
+      return text.split(/[－\-–—~～]/)
+                 .map(s => s.trim())
+                 .filter(Boolean)
+                 .map(c => {
+                   for (let k in locationMap) if (c.includes(k)) return k;
+                   return null;
+                 })
+                 .filter(Boolean);
+    }
+
+    /* ---------- 画路线（含闭环修复） ---------- */
+    function drawRoute() {
+      const txt = document.getElementById('routeText').value;
+      let cities = parseCities(txt);
+      if (cities.length < 2) return alert('至少输入两个有效地点！');
+      const isLoop = cities[0] === cities[cities.length - 1];
+      if (!isLoop) cities.push(cities[0]); // 用户未闭环则自动闭环
+
+      const coords = cities.map(c => locationMap[c]);
+      const line = L.polyline(coords, { color: '#1976d2', weight: 4 });
+
+      routeGroup.clearLayers();
+      routeGroup.addLayer(line);
+      routeGroup.addLayer(arrowDecorator(line));
+
+      coords.forEach((latlng, i) => {
+        L.circleMarker(latlng, { radius: 8, color: '#e91e63', fillOpacity: 1, fillColor: '#fff' })
+          .bindPopup(`${i + 1}. ${cities[i]}`)
+          .addTo(routeGroup);
+      });
+
+      map.fitBounds(L.latLngBounds(coords), { padding: [30, 30] });
+    }
+
+    function clearRoute() {
+      routeGroup.clearLayers();
+      document.getElementById('routeText').value = '';
+    }
+
+    function toggleBaseMap() {
+      if (currentBase === 'osm') {
+        map.removeLayer(layers.osm);
+        map.addLayer(layers.political);
+        currentBase = 'political';
+        document.getElementById('toggleBase').textContent = '标准图';
+      } else {
+        map.removeLayer(layers.political);
+        map.addLayer(layers.osm);
+        currentBase = 'osm';
+        document.getElementById('toggleBase').textContent = '政区图';
+      }
+    }
+
+    /* ==================== 弹窗逻辑 ==================== */
+    const modal = document.getElementById('routeModal');
+    const modalText = document.getElementById('modalText');
+    const routeText = document.getElementById('routeText');
+
+    // 点击输入框即弹窗
+    routeText.addEventListener('click', () => {
+      modalText.value = routeText.value;
+      modal.style.display = 'block';
+    });
+
+    // 确定：回写 + 立即画路线
+    function confirmModal() {
+      routeText.value = modalText.value.trim();
+      modal.style.display = 'none';
+      drawRoute();
+    }
+
+    // 取消
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    // 点背景也可关闭
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeModal();
+    });
+  </script>
+</body>
+</html>
