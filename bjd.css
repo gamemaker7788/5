@@ -303,6 +303,66 @@ html.light {
   --text: #3C4043;
   /* 其余变量同理... */
 }
+/* ========== 新进度条皮肤（class 版） ========== */
+.save-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-card {
+  background: var(--surface);
+  padding: 32px 40px;
+  border-radius: 16px;
+  min-width: 320px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .35);
+  text-align: right;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.save-title {
+  font-size: 17px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  letter-spacing: .5px;
+}
+
+.save-percent {
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.save-progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.save-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: 3px;
+  transition: width .25s ease-out;
+  box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary-dark);
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%   { opacity: .9; }
+  50%  { opacity: .6; }
+  100% { opacity: .9; }
+}
 
 /* ----- 动画 ----- */
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}

@@ -27,7 +27,6 @@ let serviceCounter=2, supabase=null;
 const SUPABASE_URL='https://fezxhcmiefdbvqmhczut.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
 
-/*  保证先定义，后调用  */
 function initSupabase(){
   try{
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -39,11 +38,10 @@ function initSupabase(){
   }
 }
 
-/*  页内提醒函数（toast）  */
+/*  ---------------- 小工具 ----------------  */
 function toast(msg, type = 'info', duration = 2000) {
   const exist = document.getElementById('toast-banner');
   if (exist) exist.remove();
-
   const banner = document.createElement('div');
   banner.id = 'toast-banner';
   banner.style.cssText = `
@@ -56,20 +54,18 @@ function toast(msg, type = 'info', duration = 2000) {
   `;
   banner.textContent = msg;
   document.body.appendChild(banner);
-
   setTimeout(() => {
     banner.style.opacity = '0';
     setTimeout(() => banner.remove(), 300);
   }, duration);
 }
 
-/* =================  工具函数  ================= */
 function formatDate(d){
   const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${dd}`;
 }
 
-/* =================  初始化  ================= */
+/*  ---------------- 初始化 ----------------  */
 function initializeItinerary(){
   const today=new Date(), end=new Date(); end.setDate(today.getDate()+6);
   document.getElementById('start-date').value=formatDate(today);
@@ -81,7 +77,7 @@ function initializePassengers(){
   renderPassengers();
 }
 
-/* =================  行程  ================= */
+/*  ---------------- 行程 ----------------  */
 function addDay(){
   const start=new Date(document.getElementById('start-date').value);
   if(isNaN(start)){ toast('请先选择有效的开始日期','error'); return;}
@@ -177,7 +173,7 @@ function updateDayNumbers(){
 }
 function removeDay(i){ if(itineraryData.length>1){ itineraryData.splice(i,1); updateDayNumbers(); renderItinerary();} else toast('至少需要保留一天的行程','error');}
 
-/* =================  导游  ================= */
+/*  ---------------- 导游 ----------------  */
 function selectGuide(type){
   selectedGuide=type;
   document.querySelectorAll('.guide-option').forEach(o=>o.classList.remove('selected'));
@@ -189,7 +185,7 @@ function updateSelectedGuideDays(){
   itineraryData.forEach(d=>{ if(d.guideService) selectedGuideDays.push(d.day);});
 }
 
-/* =================  附加服务  ================= */
+/*  ---------------- 附加服务 ----------------  */
 function updateExtraService(id){
   const s=extraServices.find(x=>x.id===id);
   if(s){ s.checked=document.getElementById(id).checked; calculateTotal(); updateOutput(); }
@@ -231,7 +227,7 @@ function removeService(id){
   calculateTotal(); updateOutput();
 }
 
-/* =================  乘客  ================= */
+/*  ---------------- 乘客 ----------------  */
 function addPassenger(){
   const id=passengers.length?Math.max(...passengers.map(p=>p.id))+1:1;
   passengers.push({id,name:'新乘客',countryCode:'+86',phone:'未提供'});
@@ -276,7 +272,7 @@ function renderPassengers(){
   updateOutput();
 }
 
-/* =================  计算 / 输出  ================= */
+/*  ---------------- 计算 / 输出 ----------------  */
 function calculateTotal(){
   let travel=0, hotel=0;
   itineraryData.forEach(d=>{ travel+=parseFloat(d.planPrice)||0; hotel+=parseFloat(d.accommodationPrice)||0;});
@@ -320,7 +316,10 @@ function updateOutput(){
   if(isNaN(sDate)||isNaN(eDate)){ toast('请先选择有效的开始和结束日期','error'); return;}
   const travelDate=`${sDate.getMonth()+1}月${sDate.getDate()}日-${eDate.getMonth()+1}月${eDate.getDate()}日`;
   const arrival=document.getElementById('arrival-time').value;
-  const flight=document.getElementById('flight-number').value||'无';
+  const pickup = (document.getElementById('flight-number-pickup').value || '').trim() || '无';
+const dropoff = (document.getElementById('flight-number-dropoff').value || '').trim() || '无';
+const flightDisplay = `${pickup}(接机)/${dropoff}(送机)`;
+
 
   let iti='';
   itineraryData.forEach(d=>{
@@ -360,7 +359,7 @@ function updateOutput(){
 服务类型：${service}
 预计出行日期（当地时间）：${travelDate}
 抵达时间：${arrival}
-航班号：${flight}
+航班号(接机/送机)：${flightDisplay}
 
 行程安排：
 ${iti}
@@ -384,7 +383,7 @@ ${extra}
 ${psg}`;
 }
 
-/* =================  复制 / 下载 / 保存  ================= */
+/*  ---------------- 复制 / 下载 / 保存 ----------------  */
 function copyToClipboard(){
   const txt=document.getElementById('output-content').textContent;
   if(!txt.trim()){ toast('请先生成内容','error'); return;}
@@ -405,22 +404,22 @@ function downloadAsFile(){
    完整 saveToSupabase()：带表单预校验 + 失败原因翻译
    ========================================================= */
 async function saveToSupabase() {
-  /* -------------- 1. 前端预校验 -------------- */
-  if (!validateForm()) return;          // 未通过则内部已 toast，直接返回
-  /* -------------- 2. 初始化遮罩&进度条 -------------- */
+  if (!validateForm()) return;
   if (!supabase && !initSupabase()) { toast('Supabase 初始化失败', 'error'); return; }
 
-  const mask = document.createElement('div'); mask.id = 'save-mask';
+  const mask = document.createElement('div');
+  mask.id = 'save-mask';
   mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center';
   const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;padding:28px 38px;border-radius:8px;text-align:center;font-size:15px;line-height:1.8;box-shadow:0 4px 20px rgba(0,0,0,.25)';
+box.className = 'save-card';      // ← 加这一
   const title = document.createElement('div');
   const percent = document.createElement('div');
   percent.style.cssText = 'margin-top:10px;font-size:20px;font-weight:bold;color:#004edd';
   const barWrap = document.createElement('div');
-  barWrap.style.cssText = 'margin-top:8px;width:260px;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden';
+  barWrap.className = 'save-progress-wrap';   // ← 加这一行
+  
   const bar = document.createElement('div');
-  bar.style.cssText = 'height:100%;background:#004edd;width:0%;transition:width .2s';
+  bar.className = 'save-progress-bar';        // ← 加这一行
   barWrap.appendChild(bar);
   box.append(title, percent, barWrap); mask.append(box); document.body.append(mask);
 
@@ -437,14 +436,14 @@ async function saveToSupabase() {
     throw new Error(friendly);
   };
 
-  /* -------------- 3. 小工具 -------------- */
   const toInt = v => parseInt(String(v).replace(/[^0-9.-]/g, ''), 10) || 0;
 
-  /* =====================================================
-     阶段①：主表 itineraries
-     ===================================================== */
   title.textContent = '正在保存主表 itineraries…'; updateProgress(5);
   const orderNumber = document.getElementById('order-number').value.trim();
+ const pickup = (document.getElementById('flight-number-pickup').value || '').trim() || '无';
+const dropoff = (document.getElementById('flight-number-dropoff').value || '').trim() || '无';
+const flightDisplay = `${pickup}(接机)/${dropoff}(送机)`;
+
   const { data: itData, error: itErr } = await supabase
     .from('itineraries')
     .insert([{
@@ -453,7 +452,7 @@ async function saveToSupabase() {
       start_date: document.getElementById('start-date').value,
       end_date: document.getElementById('end-date').value,
       arrival_time: document.getElementById('arrival-time').value,
-      flight_number: document.getElementById('flight-number').value || '无',
+      flight_number: flightDisplay,
       hotel_standard: document.getElementById('hotel-standard').value,
       room_type: document.getElementById('room-type').value,
       guide_type: selectedGuide,
@@ -463,13 +462,11 @@ async function saveToSupabase() {
     }])
     .select()
     .single();
+
   if (itErr) return fail('itineraries 表', itErr);
   const itineraryId = itData.id;
   updateProgress(15);
 
-  /* =====================================================
-     阶段②：itinerary_days 子表
-     ===================================================== */
   title.textContent = '正在保存行程天数…';
   const totalTasks = itineraryData.length + passengers.length + extraServices.filter(s => s.checked).length;
   let done = 0;
@@ -488,9 +485,6 @@ async function saveToSupabase() {
     done++; updateProgress((done / totalTasks) * 100);
   }
 
-  /* =====================================================
-     阶段③：passengers 表
-     ===================================================== */
   title.textContent = '正在保存乘客信息…';
   for (const p of passengers) {
     const { error: psgErr } = await supabase.from('passengers').insert({
@@ -503,9 +497,6 @@ async function saveToSupabase() {
     done++; updateProgress((done / totalTasks) * 100);
   }
 
-  /* =====================================================
-     阶段④：extra_services 表
-     ===================================================== */
   title.textContent = '正在保存附加服务…';
   for (const s of extraServices) {
     if (!s.checked) continue;
@@ -520,9 +511,6 @@ async function saveToSupabase() {
     done++; updateProgress((done / totalTasks) * 100);
   }
 
-  /* =====================================================
-     全部完成
-     ===================================================== */
   title.textContent = '保存完成！';
   percent.textContent = '100 %'; bar.style.width = '100%';
   setTimeout(() => {
@@ -578,14 +566,13 @@ function translateError(code, msg, stage) {
   return `${stage} 保存失败：${msg}`;
 }
 
-
 /*  页面入口  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => { // ✅ 注意：这里是 async
   try {
     initializeItinerary();
     initializePassengers();
     selectGuide('no');
-    initSupabase();   // ✅ 函数已定义，不会报错
+    initSupabase();
     calculateTotal();
     updateOutput();
   } catch (e) {
@@ -593,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('页面初始化失败: ' + e.message, 'error');
   }
 });
+
 /* 导游按钮 */
 document.addEventListener('click', e => {
   const btn = e.target.closest('.guide-option');
@@ -611,14 +599,14 @@ document.addEventListener('click', e => {
 /* 常规按钮 */
 ['add-day-btn', 'add-passenger-btn', 'add-service-btn', 'update-output-btn', 'copy-btn', 'download-btn', 'save-supabase-btn']
   .forEach(id => {
-    document.getElementById(id)?.addEventListener('click', () => {
+    document.getElementById(id)?.addEventListener('click', async () => { // ✅ async 加了
       if (id === 'add-day-btn') addDay();
       if (id === 'add-passenger-btn') addPassenger();
       if (id === 'add-service-btn') addNewService();
       if (id === 'update-output-btn') updateOutput();
       if (id === 'copy-btn') copyToClipboard();
       if (id === 'download-btn') downloadAsFile();
-      if (id === 'save-supabase-btn') saveToSupabase();
+      if (id === 'save-supabase-btn') await saveToSupabase(); // ✅ await 在 async 里
     });
   });
 

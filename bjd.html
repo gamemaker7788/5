@@ -41,7 +41,7 @@
           <h3>出行信息</h3>
           <div class="info-item">
             <span class="info-label">单号：</span>
-            <span class="info-value"><input type="text" class="order-number-input" id="order-number" placeholder="可不填"></span>
+            <span class="info-value"><input type="text" class="order-number-input" id="order-number" placeholder="必填(仅数字)"></span>
           </div>
           <div class="info-item">
             <span class="info-label">服务类型：</span>
@@ -61,10 +61,15 @@
             <span class="info-label">抵达时间：</span>
             <span class="info-value"><input type="time" id="arrival-time" class="time-input" value="21:20"></span>
           </div>
-          <div class="info-item">
-            <span class="info-label">航班号：</span>
-            <span class="info-value"><input type="text" class="editable" value="" id="flight-number" placeholder="如CZ6039"></span>
+                    <div class="info-item">
+            <span class="info-label">接机航班号：</span>
+            <span class="info-value"><input type="text" class="editable" value="" id="flight-number-pickup" placeholder="如CZ6039"></span>
           </div>
+          <div class="info-item">
+            <span class="info-label">送机航班号：</span>
+            <span class="info-value"><input type="text" class="editable" value="" id="flight-number-dropoff" placeholder="如CZ6040"></span>
+          </div>
+
         </div>
         <div class="info-card">
           <h3>服务详情</h3>
