@@ -134,6 +134,33 @@ tr:hover{background:var(--gray-1);}
   z-index: 1001;
   position: relative;
 }
+/* ========== Win10 风格通知 ========== */
+.win10-toast{
+  position:fixed;
+  top:24px; right:-400px;          /* 初始藏在屏幕外 */
+  width:360px;
+  background:#fff;
+  box-shadow:0 8px 32px rgba(0,0,0,.18);
+  border-radius:6px;
+  display:flex;
+  align-items:center;
+  padding:14px 18px;
+  font-size:14px;
+  line-height:1.4;
+  z-index:9999;
+  transition:right .35s cubic-bezier(.25,.46,.45,.94);
+}
+.win10-toast.show{ right:24px; }   /* 滑入 */
+.win10-toast .icon{
+  font-size:24px;
+  margin-right:14px;
+}
+.win10-toast.success{ border-left:6px solid #10b981; }
+.win10-toast.success .icon{ color:#10b981; }
+.win10-toast.error{ border-left:6px solid #ef4444; }
+.win10-toast.error .icon{ color:#ef4444; }
+.win10-toast.warning{ border-left:6px solid #f59e0b; }
+.win10-toast.warning .icon{ color:#f59e0b; }
 
 /* ==========  响应式  ========== */
 @media(max-width:768px){
