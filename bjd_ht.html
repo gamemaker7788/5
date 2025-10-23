@@ -4,7 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>格鲁吉亚行程管理系统 - 后台</title>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <link rel="stylesheet" href="bjd_ht.css"/>
 </head>
@@ -19,6 +18,16 @@
         <div id="record-count">0 条记录</div>
       </div>
     </header>
+
+    <!-- 批量操作栏 -->
+    <div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;">
+      <label style="font-size:14px;">
+        <input type="checkbox" id="checkAllHead" onclick="toggleCheckAll()"> 全选
+      </label>
+      <button class="btn btn-danger" onclick="batchDelete()" id="batchDelBtn" disabled>
+        <i class="fas fa-trash"></i> 批量删除 (<span id="selCount">0</span>)
+      </button>
+    </div>
 
     <!-- 搜索 / 筛选 -->
     <div class="filters">
@@ -57,6 +66,7 @@
       <table>
         <thead>
           <tr>
+            <th class="col-chk"><input type="checkbox" id="checkAllHead" onclick="toggleCheckAll()"></th>
             <th width="10%">单号</th>
             <th width="12%">服务类型</th>
             <th width="12%">出行日期</th>
@@ -69,7 +79,7 @@
           </tr>
         </thead>
         <tbody id="data-body">
-          <tr><td colspan="9" class="loading">加载中...</td></tr>
+          <tr><td colspan="10" class="loading">加载中...</td></tr>
         </tbody>
       </table>
       <div class="pagination" id="pagination"></div>
@@ -84,6 +94,23 @@
         <span class="close" onclick="closeModal()">&times;</span>
       </div>
       <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 确认弹窗 -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content" style="max-width:400px;">
+      <div class="modal-header">
+        <h3 id="confirmTitle">确认操作</h3>
+        <span class="close" onclick="closeConfirmModal()">&times;</span>
+      </div>
+      <div id="confirmBody" style="padding:20px 0;text-align:center;">
+        <p id="confirmMessage">确定要执行此操作吗？</p>
+      </div>
+      <div style="text-align:center;padding:20px 0;">
+        <button class="btn btn-danger" id="confirmBtn">确定</button>
+        <button class="btn" onclick="closeConfirmModal()" style="margin-left:10px;">取消</button>
+      </div>
     </div>
   </div>
 

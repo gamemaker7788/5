@@ -4,6 +4,7 @@
  *  2. 子表弹窗行内编辑
  *  3. Enter 失焦保存 / Esc 撤销
  *  4. Win10 风格通知提示
+ *  5. 批量删除（含全选、级联删子表）
  *******************************************************************/
 const SUPABASE_URL = 'https://fezxhcmiefdbvqmhczut.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
@@ -22,7 +23,7 @@ function showStatus(msg, type = 'success') {
   toast.className = `win10-toast ${type}`;
   toast.innerHTML = `<i class="fas ${iconMap[type]} icon"></i><div>${msg}</div>`;
   document.body.appendChild(toast);
-  void toast.offsetWidth;          // 触发 reflow
+  void toast.offsetWidth;
   toast.classList.add('show');
   setTimeout(() => { toast.style.right = '-400px'; toast.addEventListener('transitionend', () => toast.remove(), { once: true }); }, 3000);
 }
@@ -34,10 +35,50 @@ const countryCodes = [
   { code: '+33', country: '法国' }, { code: '+49', country: '德国' }, { code: '+44', country: '英国' }
 ];
 
+/* ---------- 批量删除 ---------- */
+let selectedIds = [];
+
+function onRowCheck(chk) {
+  const id = chk.value;
+  if (chk.checked) { if (!selectedIds.includes(id)) selectedIds.push(id); }
+  else { selectedIds = selectedIds.filter(i => i !== id); }
+  document.getElementById('selCount').textContent = selectedIds.length;
+  document.getElementById('batchDelBtn').disabled = selectedIds.length === 0;
+  document.getElementById('checkAllHead').checked = 
+    document.querySelectorAll('#data-body input[type="checkbox"]:checked').length ===
+    document.querySelectorAll('#data-body input[type="checkbox"]').length;
+}
+
+function toggleCheckAll() {
+  const all = document.getElementById('checkAllHead').checked;
+  document.querySelectorAll('#data-body input[type="checkbox"]').forEach(chk => {
+    chk.checked = all; onRowCheck(chk);
+  });
+}
+
+async function batchDelete() {
+  if (selectedIds.length === 0) return;
+  showConfirmModal(
+    `确定删除选中的 ${selectedIds.length} 条行程？<br>（关联的天数、乘客、附加服务将一并删除）`,
+    '批量删除确认',
+    async () => {
+      await supabase.from('itinerary_days').delete().in('itinerary_id', selectedIds);
+      await supabase.from('passengers').delete().in('itinerary_id', selectedIds);
+      await supabase.from('extra_services').delete().in('itinerary_id', selectedIds);
+      const { error } = await supabase.from('itineraries').delete().in('id', selectedIds);
+      if (error) { showStatus('批量删除失败：' + error.message, 'error'); return; }
+      showStatus(`成功删除 ${selectedIds.length} 条记录`);
+      selectedIds = []; document.getElementById('selCount').textContent = 0;
+      loadItineraries();
+    }
+  );
+}
+
 /* ---------- 主表加载 ---------- */
 let currentPage = 1, itemsPerPage = 20, totalRecords = 0;
+
 async function loadItineraries() {
-  document.getElementById('data-body').innerHTML = '<tr><td colspan="9" class="loading">加载中...</td></tr>';
+  document.getElementById('data-body').innerHTML = '<tr><td colspan="10" class="loading">加载中...</td></tr>';
   const { data, error, count } = await supabase
     .from('itineraries')
     .select('*', { count: 'exact' })
@@ -47,12 +88,15 @@ async function loadItineraries() {
   totalRecords = count;
   renderItineraries(data || []);
   renderPagination(count);
+  document.getElementById('record-count').textContent = `${count} 条记录`;
 }
+
 function renderItineraries(data) {
   const tbody = document.getElementById('data-body');
-  if (!data.length) { tbody.innerHTML = '<tr><td colspan="9">无记录</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="10">无记录</td></tr>'; return; }
   tbody.innerHTML = data.map(r => `
     <tr>
+      <td class="col-chk"><input type="checkbox" value="${r.id}" onchange="onRowCheck(this)"></td>
       <td><strong>${r.order_number || '无单号'}</strong></td>
       <td>${r.service_type || '无'}</td>
       <td>${fmtDate(r.start_date)} - ${fmtDate(r.end_date)}</td>
@@ -70,6 +114,7 @@ function renderItineraries(data) {
       </td>
     </tr>`).join('');
 }
+
 function renderPagination(total) {
   const totalPages = Math.ceil(total / itemsPerPage);
   const p = document.getElementById('pagination');
@@ -80,6 +125,7 @@ function renderPagination(total) {
   if (currentPage < totalPages) html += `<button class="page-btn" onclick="changePage(${currentPage + 1})">下一页</button>`;
   p.innerHTML = html;
 }
+
 function changePage(page) { currentPage = page; loadItineraries(); }
 
 /* ---------- 详情弹窗 ---------- */
@@ -164,6 +210,7 @@ async function editItinerary(id) {
   document.getElementById('modal-body').innerHTML = html;
   openModal('modal');
 }
+
 async function saveMainItinerary(id) {
   const payload = {
     order_number: document.getElementById('edit-order-number').value.trim(),
@@ -199,6 +246,7 @@ async function editDays(id) {
   openModal('modal');
   setTimeout(() => attachInputs(true), 0);
 }
+
 function dayRow(d, i) {
   return `<tr>
     <td>${d.day_number}</td>
@@ -215,6 +263,7 @@ function dayRow(d, i) {
     </td>
   </tr>`;
 }
+
 async function addDay() {
   const maxDay = Math.max(...editCache.days.map(d => d.day_number), 0);
   const startDate = new Date(editCache.itinerary.start_date);
@@ -230,13 +279,16 @@ async function addDay() {
   document.getElementById('days-tbody').insertAdjacentHTML('beforeend', dayRow(data, editCache.days.length - 1));
   setTimeout(() => attachInputs(true), 0);
 }
+
 async function removeDay(dayId) {
-  if (!confirm('删除这一天？')) return;
-  await supabase.from('itinerary_days').delete().eq('id', dayId);
-  editCache.days = editCache.days.filter(d => d.id !== dayId);
-  document.querySelector(`[data-day="${dayId}"]`).closest('tr').remove();
-  showStatus('已删除');
+  showConfirmModal('删除这一天？此操作不可恢复。', '删除确认', async () => {
+    await supabase.from('itinerary_days').delete().eq('id', dayId);
+    editCache.days = editCache.days.filter(d => d.id !== dayId);
+    document.querySelector(`[data-day="${dayId}"]`).closest('tr').remove();
+    showStatus('已删除');
+  });
 }
+
 function moveDay(index, direction) {
   const arr = editCache.days;
   const target = direction === 'up' ? index - 1 : index + 1;
@@ -244,6 +296,7 @@ function moveDay(index, direction) {
   document.getElementById('days-tbody').innerHTML = arr.map((d, i) => dayRow(d, i)).join('');
   setTimeout(() => attachInputs(true), 0);
 }
+
 async function saveDays(id) {
   for (const row of document.querySelectorAll('#days-tbody tr')) {
     const dayId = row.querySelector('[data-day]').dataset.day;
@@ -275,6 +328,7 @@ async function editPassengers(id) {
   openModal('modal');
   setTimeout(() => attachInputs(true), 0);
 }
+
 function passengerRow(p, i) {
   return `<div class="passenger-item" data-passenger="${p.id}">
     <span>${i + 1}、</span><span>姓名:</span>
@@ -287,6 +341,7 @@ function passengerRow(p, i) {
     <button class="action-btn btn-delete" onclick="removePassenger('${p.id}')">×</button>
   </div>`;
 }
+
 async function addPassenger() {
   const { data, error } = await supabase.from('passengers').insert({
     itinerary_id: editCache.itinerary.id, name: '新乘客', country_code: '+86', phone: '未提供'
@@ -296,13 +351,16 @@ async function addPassenger() {
   document.getElementById('passengers-list').insertAdjacentHTML('beforeend', passengerRow(data, editCache.passengers.length - 1));
   setTimeout(() => attachInputs(true), 0);
 }
+
 async function removePassenger(pid) {
-  if (!confirm('删除该乘客？')) return;
-  await supabase.from('passengers').delete().eq('id', pid);
-  editCache.passengers = editCache.passengers.filter(p => p.id !== pid);
-  document.querySelector(`[data-passenger="${pid}"]`).remove();
-  showStatus('已删除');
+  showConfirmModal('删除该乘客？此操作不可恢复。', '删除确认', async () => {
+    await supabase.from('passengers').delete().eq('id', pid);
+    editCache.passengers = editCache.passengers.filter(p => p.id !== pid);
+    document.querySelector(`[data-passenger="${pid}"]`).remove();
+    showStatus('已删除');
+  });
 }
+
 async function savePassengers(id) {
   for (const row of document.querySelectorAll('[data-passenger]')) {
     const pid = row.dataset.passenger;
@@ -331,6 +389,7 @@ async function editServices(id) {
   openModal('modal');
   setTimeout(() => attachInputs(true), 0);
 }
+
 function serviceRow(s, i) {
   return `<div class="extra-service-item" data-service="${s.id}">
     <input type="checkbox" ${s.is_selected ? 'checked' : ''} onchange="toggleService('${s.id}')">
@@ -340,6 +399,7 @@ function serviceRow(s, i) {
     <button class="remove-btn" onclick="removeService('${s.id}')">×</button>
   </div>`;
 }
+
 async function addService() {
   const { data, error } = await supabase.from('extra_services').insert({
     itinerary_id: editCache.itinerary.id, service_name: '新服务', price: 0, unit: '', is_selected: false
@@ -349,17 +409,21 @@ async function addService() {
   document.getElementById('services-list').insertAdjacentHTML('beforeend', serviceRow(data, editCache.services.length - 1));
   setTimeout(() => attachInputs(true), 0);
 }
+
 async function removeService(sid) {
-  if (!confirm('删除该服务？')) return;
-  await supabase.from('extra_services').delete().eq('id', sid);
-  editCache.services = editCache.services.filter(s => s.id !== sid);
-  document.querySelector(`[data-service="${sid}"]`).remove();
-  showStatus('已删除');
+  showConfirmModal('删除该服务？此操作不可恢复。', '删除确认', async () => {
+    await supabase.from('extra_services').delete().eq('id', sid);
+    editCache.services = editCache.services.filter(s => s.id !== sid);
+    document.querySelector(`[data-service="${sid}"]`).remove();
+    showStatus('已删除');
+  });
 }
+
 function toggleService(sid) {
   const row = document.querySelector(`[data-service="${sid}"]`);
   row.style.opacity = row.querySelector('input[type="checkbox"]').checked ? 1 : 0.5;
 }
+
 async function saveServices(id) {
   for (const row of document.querySelectorAll('[data-service]')) {
     const sid = row.dataset.service;
@@ -393,6 +457,36 @@ function attachInputs(force = false) {
 function openModal(id) { document.getElementById(id).style.display = 'block'; }
 function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
+/* ---------- 确认弹窗 ---------- */
+let confirmCallback = null;
+function showConfirmModal(message, title = '确认操作', onConfirm) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').innerHTML = message;
+  document.getElementById('confirmModal').style.display = 'block';
+  confirmCallback = onConfirm;
+}
+function closeConfirmModal() {
+  document.getElementById('confirmModal').style.display = 'none';
+  confirmCallback = null;
+}
+document.getElementById('confirmBtn').addEventListener('click', () => {
+  if (confirmCallback) confirmCallback();
+  closeConfirmModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeConfirmModal(); });
+
+/* ---------- 统一删除 ---------- */
+function showDeleteModal(id) {
+  showConfirmModal('确定删除整个行程？', '删除确认', async () => {
+    await supabase.from('itinerary_days').delete().eq('itinerary_id', id);
+    await supabase.from('passengers').delete().eq('itinerary_id', id);
+    await supabase.from('extra_services').delete().eq('itinerary_id', id);
+    const { error } = await supabase.from('itineraries').delete().eq('id', id);
+    if (error) { showStatus('删除失败：' + error.message, 'error'); return; }
+    showStatus('已删除'); loadItineraries();
+  });
+}
+
 /* ---------- 初始化 ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   loadItineraries();
@@ -400,11 +494,3 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById(id).addEventListener('input', debounce(loadItineraries, 300));
   });
 });
-/* 统一删除 */
-function showDeleteModal(id) {
-  if (!confirm('确定删除整个行程？')) return;
-  supabase.from('itineraries').delete().eq('id', id).then(({ error }) => {
-    if (error) { showStatus('删除失败：' + error.message, 'error'); return; }
-    showStatus('已删除'); loadItineraries();
-  });
-}

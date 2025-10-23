@@ -1,10 +1,10 @@
 /* ==========  CSS 变量（主题token） ========== */
 :root{
-  --primary: #6366f1;           /* 主色 indigo-500 */
-  --primary-dark: #4f46e5;      /* indigo-600 */
-  --success: #10b981;           /* emerald-500 */
-  --danger: #ef4444;            /* red-500 */
-  --warning: #f59e0b;           /* amber-500 */
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
   --gray-1: #f9fafb;
   --gray-2: #f3f4f6;
   --gray-3: #e5e7eb;
@@ -28,46 +28,24 @@ header{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 1
 h1{font-size:2rem;font-weight:700;}
 .subtitle{font-size:1.1rem;opacity:.9;}
 
-/* ==========  按钮（新） ========== */
-.btn{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:.6rem 1.25rem;
-  border:none;border-radius:var(--radius);
-  font-size:.95rem;font-weight:500;
-  cursor:pointer;transition:var(--transition);
-  box-shadow:var(--shadow-sm);
-}
+/* ==========  按钮  ========== */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:.6rem 1.25rem;border:none;border-radius:var(--radius);font-size:.95rem;font-weight:500;cursor:pointer;transition:var(--transition);box-shadow:var(--shadow-sm);}
 .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
 .btn:active{transform:translateY(0);}
-
 .btn-primary{background:var(--primary);color:#fff;}
 .btn-primary:hover{background:var(--primary-dark);}
-
 .btn-success{background:var(--success);color:#fff;}
 .btn-success:hover{background:#059669;}
-
 .btn-danger{background:var(--danger);color:#fff;}
 .btn-danger:hover{background:#dc2626;}
-
 .btn-warning{background:var(--warning);color:#fff;}
 .btn-warning:hover{background:#d97706;}
-
 .btn-add{background:var(--primary);color:#fff;}
 .btn-add:hover{background:var(--primary-dark);}
-
 .btn-export{background:var(--success);color:#fff;}
 .btn-export:hover{background:#059669;}
-
-/* 新添加的按钮组（天数/乘客/服务） */
 .action-buttons{display:flex;gap:.5rem;flex-wrap:wrap;}
-.action-btn{
-  display:inline-flex;align-items:center;gap:4px;
-  padding:.4rem .8rem;
-  border:none;border-radius:var(--radius);
-  font-size:.85rem;font-weight:500;
-  cursor:pointer;transition:var(--transition);
-  box-shadow:var(--shadow-sm);
-}
+.action-btn{display:inline-flex;align-items:center;gap:4px;padding:.4rem .8rem;border:none;border-radius:var(--radius);font-size:.85rem;font-weight:500;cursor:pointer;transition:var(--transition);box-shadow:var(--shadow-sm);}
 .action-btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
 .action-btn.btn-view{background:#3b82f6;color:#fff;}
 .action-btn.btn-edit{background:var(--warning);color:#fff;}
@@ -116,6 +94,7 @@ tr:hover{background:var(--gray-1);}
 .itinerary-table th,.itinerary-table td{padding:.75rem;border-bottom:1px solid var(--gray-3);}
 .itinerary-table th{background:var(--gray-2);font-size:.85rem;}
 .itinerary-actions{display:flex;justify-content:flex-end;margin-bottom:.75rem;}
+
 /* 强制解锁弹窗内输入 */
 .modal-content .inline-edit,
 .modal-content .inline-select,
@@ -124,43 +103,21 @@ tr:hover{background:var(--gray-1);}
   pointer-events: auto !important;
   user-select: text !important;
 }
+.modal{z-index:1000;}
+.modal-content{z-index:1001;position:relative;}
 
-/* 防止遮罩层挡住 */
-.modal {
-  z-index: 1000;
-}
-
-.modal-content {
-  z-index: 1001;
-  position: relative;
-}
 /* ========== Win10 风格通知 ========== */
 .win10-toast{
-  position:fixed;
-  top:24px; right:-400px;          /* 初始藏在屏幕外 */
-  width:360px;
-  background:#fff;
-  box-shadow:0 8px 32px rgba(0,0,0,.18);
-  border-radius:6px;
-  display:flex;
-  align-items:center;
-  padding:14px 18px;
-  font-size:14px;
-  line-height:1.4;
-  z-index:9999;
-  transition:right .35s cubic-bezier(.25,.46,.45,.94);
+  position:fixed;top:24px;right:-400px;width:360px;background:#fff;box-shadow:0 8px 32px rgba(0,0,0,.18);border-radius:6px;display:flex;align-items:center;padding:14px 18px;font-size:14px;line-height:1.4;z-index:9999;transition:right .35s cubic-bezier(.25,.46,.45,.94);
 }
-.win10-toast.show{ right:24px; }   /* 滑入 */
-.win10-toast .icon{
-  font-size:24px;
-  margin-right:14px;
-}
-.win10-toast.success{ border-left:6px solid #10b981; }
-.win10-toast.success .icon{ color:#10b981; }
-.win10-toast.error{ border-left:6px solid #ef4444; }
-.win10-toast.error .icon{ color:#ef4444; }
-.win10-toast.warning{ border-left:6px solid #f59e0b; }
-.win10-toast.warning .icon{ color:#f59e0b; }
+.win10-toast.show{right:24px;}
+.win10-toast .icon{font-size:24px;margin-right:14px;}
+.win10-toast.success{border-left:6px solid #10b981;}
+.win10-toast.success .icon{color:#10b981;}
+.win10-toast.error{border-left:6px solid #ef4444;}
+.win10-toast.error .icon{color:#ef4444;}
+.win10-toast.warning{border-left:6px solid #f59e0b;}
+.win10-toast.warning .icon{color:#f59e0b;}
 
 /* ==========  响应式  ========== */
 @media(max-width:768px){
@@ -168,3 +125,6 @@ tr:hover{background:var(--gray-1);}
   .filter-item{width:100%;}
   .header-content{flex-direction:column;align-items:flex-start;}
 }
+
+/* 复选框列 */
+th.col-chk,td.col-chk{width:36px;text-align:center;}

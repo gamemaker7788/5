@@ -401,36 +401,48 @@ function downloadAsFile(){
 }
 
 /* =========================================================
-   完整 saveToSupabase()：带表单预校验 + 失败原因翻译
+   实时进度条版 saveToSupabase()
    ========================================================= */
 async function saveToSupabase() {
   if (!validateForm()) return;
   if (!supabase && !initSupabase()) { toast('Supabase 初始化失败', 'error'); return; }
 
+  /* ---------- 1. 创建遮罩 ---------- */
   const mask = document.createElement('div');
   mask.id = 'save-mask';
-  mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center';
-  const box = document.createElement('div');
-box.className = 'save-card';      // ← 加这一
-  const title = document.createElement('div');
-  const percent = document.createElement('div');
-  percent.style.cssText = 'margin-top:10px;font-size:20px;font-weight:bold;color:#004edd';
-  const barWrap = document.createElement('div');
-  barWrap.className = 'save-progress-wrap';   // ← 加这一行
-  
-  const bar = document.createElement('div');
-  bar.className = 'save-progress-bar';        // ← 加这一行
-  barWrap.appendChild(bar);
-  box.append(title, percent, barWrap); mask.append(box); document.body.append(mask);
+  mask.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;
+                        display:flex;align-items:center;justify-content:center`;
+  mask.innerHTML = `
+    <div class="save-card">
+      <div class="save-title">正在保存…</div>
+      <div class="save-percent">0 %</div>
+      <div class="save-progress-wrap">
+        <div class="save-progress-bar" style="width:0%"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(mask);
 
-  const updateProgress = (v, msg = '') => {
-    percent.textContent = msg ? `${msg} (${Math.round(v)} %)` : `${Math.round(v)} %`;
-    bar.style.width = `${Math.round(v)} %`;
-  };
+  const titleEl   = mask.querySelector('.save-title');
+  const percentEl = mask.querySelector('.save-percent');
+  const barEl     = mask.querySelector('.save-progress-bar');
+
+const updateProgress = (percent, msg = '') => {
+  const bar = document.querySelector('.save-progress-bar');
+  const txt = document.querySelector('.save-percent');
+  // 总宽按 320px 算（跟 .save-card 同宽）
+  const totalPx = 320;
+  const px = Math.round((percent / 100) * totalPx);
+  if (bar) bar.style.width = px + 'px';   // 现在带过渡动画
+
+  if (txt) txt.textContent = msg ? `${msg} (${Math.round(percent)}%)` : `${Math.round(percent)}%`;
+};
+
+
   const fail = (stage, err) => {
-    title.textContent = '保存失败'; title.style.color = '#ff4d4f'; bar.style.background = '#ff4d4f';
+    titleEl.textContent = '保存失败';
+    barEl.style.background = '#ff4d4f';
     const friendly = translateError(err.code, err.message, stage);
-    percent.textContent = friendly;
+    percentEl.textContent = friendly;
     setTimeout(() => mask.remove(), 4000);
     toast(`保存失败：${friendly}`, 'error');
     throw new Error(friendly);
@@ -438,12 +450,20 @@ box.className = 'save-card';      // ← 加这一
 
   const toInt = v => parseInt(String(v).replace(/[^0-9.-]/g, ''), 10) || 0;
 
-  title.textContent = '正在保存主表 itineraries…'; updateProgress(5);
-  const orderNumber = document.getElementById('order-number').value.trim();
- const pickup = (document.getElementById('flight-number-pickup').value || '').trim() || '无';
-const dropoff = (document.getElementById('flight-number-dropoff').value || '').trim() || '无';
-const flightDisplay = `${pickup}(接机)/${dropoff}(送机)`;
+  /* ---------- 2. 总任务数 ---------- */
+  const totalTasks =
+    1 +                                    // itineraries
+    itineraryData.length +                 // days
+    passengers.length +                    // passengers
+    extraServices.filter(s => s.checked).length; // services
 
+  let done = 0;
+
+  /* ---------- 3. 主表 itineraries ---------- */
+  titleEl.textContent = '正在保存主表…';
+  const orderNumber = document.getElementById('order-number').value.trim();
+  const pickup  = (document.getElementById('flight-number-pickup').value  || '').trim() || '无';
+  const dropoff = (document.getElementById('flight-number-dropoff').value || '').trim() || '无';
   const { data: itData, error: itErr } = await supabase
     .from('itineraries')
     .insert([{
@@ -452,7 +472,7 @@ const flightDisplay = `${pickup}(接机)/${dropoff}(送机)`;
       start_date: document.getElementById('start-date').value,
       end_date: document.getElementById('end-date').value,
       arrival_time: document.getElementById('arrival-time').value,
-      flight_number: flightDisplay,
+      flight_number: `${pickup}(接机)/${dropoff}(送机)`,
       hotel_standard: document.getElementById('hotel-standard').value,
       room_type: document.getElementById('room-type').value,
       guide_type: selectedGuide,
@@ -465,11 +485,9 @@ const flightDisplay = `${pickup}(接机)/${dropoff}(送机)`;
 
   if (itErr) return fail('itineraries 表', itErr);
   const itineraryId = itData.id;
-  updateProgress(15);
+  done++; updateProgress((done / totalTasks) * 100, '主表已保存');
 
-  title.textContent = '正在保存行程天数…';
-  const totalTasks = itineraryData.length + passengers.length + extraServices.filter(s => s.checked).length;
-  let done = 0;
+  /* ---------- 4. 行程天数 ---------- */
   for (const d of itineraryData) {
     const { error: dayErr } = await supabase.from('itinerary_days').insert({
       itinerary_id: itineraryId,
@@ -481,11 +499,12 @@ const flightDisplay = `${pickup}(接机)/${dropoff}(送机)`;
       accommodation_price: toInt(d.accommodationPrice),
       guide_service: d.guideService
     });
-    if (dayErr) return fail(`itinerary_days 表（第${d.day}天）`, dayErr);
+    if (dayErr) return fail(`第${d.day}天`, dayErr);
     done++; updateProgress((done / totalTasks) * 100);
   }
 
-  title.textContent = '正在保存乘客信息…';
+  /* ---------- 5. 乘客 ---------- */
+  titleEl.textContent = '正在保存乘客…';
   for (const p of passengers) {
     const { error: psgErr } = await supabase.from('passengers').insert({
       itinerary_id: itineraryId,
@@ -493,11 +512,12 @@ const flightDisplay = `${pickup}(接机)/${dropoff}(送机)`;
       country_code: p.countryCode,
       phone: p.phone.trim() === '' ? '未提供' : p.phone
     });
-    if (psgErr) return fail(`passengers 表（乘客 ${p.name}）`, psgErr);
+    if (psgErr) return fail(`乘客 ${p.name}`, psgErr);
     done++; updateProgress((done / totalTasks) * 100);
   }
 
-  title.textContent = '正在保存附加服务…';
+  /* ---------- 6. 附加服务 ---------- */
+  titleEl.textContent = '正在保存附加服务…';
   for (const s of extraServices) {
     if (!s.checked) continue;
     const { error: svcErr } = await supabase.from('extra_services').insert({
@@ -507,15 +527,16 @@ const flightDisplay = `${pickup}(接机)/${dropoff}(送机)`;
       unit: s.unit,
       is_selected: s.checked
     });
-    if (svcErr) return fail(`extra_services 表（${s.name}）`, svcErr);
+    if (svcErr) return fail(`附加服务 ${s.name}`, svcErr);
     done++; updateProgress((done / totalTasks) * 100);
   }
 
-  title.textContent = '保存完成！';
-  percent.textContent = '100 %'; bar.style.width = '100%';
+  /* ---------- 7. 完成 ---------- */
+  titleEl.textContent = '保存完成！';
+  updateProgress(100, '完成');
   setTimeout(() => {
     mask.remove();
-    toast(`数据保存成功！\n单号：${orderNumber}\n保存ID：${itineraryId}`, 'success');
+    toast(`数据保存成功！单号：${orderNumber}`, 'success');
   }, 400);
 }
 
