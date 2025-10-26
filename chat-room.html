@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信风格聊天室</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 左侧边栏 -->
+    <div class="sidebar">
+        <div class="sidebar-item active" id="chatTab">💬</div>
+        <div class="sidebar-item" id="contactsTab">👥</div>
+        <div class="sidebar-item" id="discoverTab">🔍</div>
+        <div class="sidebar-item" id="settingsTab">⚙️</div>
+    </div>
+    
+    <!-- 聊天列表 -->
+    <div class="chat-list" id="chatList">
+        <div class="search-bar">
+            <input type="text" id="chatSearch" placeholder="搜索聊天">
+        </div>
+        <div class="chat-items" id="chatItems">
+            <div class="welcome-message">加载中...</div>
+        </div>
+    </div>
+    
+    <!-- 通讯录 -->
+    <div class="contacts-container" id="contactsContainer">
+        <div class="search-bar">
+            <input type="text" id="contactSearch" placeholder="搜索联系人">
+        </div>
+        <div class="chat-items" id="contactsList">
+            <div class="welcome-message">加载中...</div>
+        </div>
+    </div>
+    
+    <!-- 发现页面 -->
+    <div class="contacts-container" id="discoverContainer">
+        <div class="setting-item">
+            <div><span class="setting-icon">🔄</span>朋友圈</div>
+            <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item">
+            <div><span class="setting-icon">🔍</span>扫一扫</div>
+            <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item">
+            <div><span class="setting-icon">👋</span>摇一摇</div>
+            <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item">
+            <div><span class="setting-icon">👀</span>看一看</div>
+            <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item">
+            <div><span class="setting-icon">🔍</span>搜一搜</div>
+            <span class="setting-arrow">›</span>
+        </div>
+    </div>
+    
+    <!-- 设置页面 -->
+    <div class="settings-container" id="settingsContainer">
+        <div class="setting-item" id="changeNameBtn">
+            <div><span class="setting-icon">👤</span>修改用户名</div>
+            <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item" id="privacySettingsBtn">
+            <div><span class="setting-icon">🔒</span>隐私设置</div>
+            <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item" id="notificationSettingsBtn">
+            <div><span class="setting-icon">🔔</span>通知设置</div>
+            <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item" id="aboutBtn">
+            <div><span class="setting-icon">ℹ️</span>关于我们</div>
+            <span class="setting-arrow">›</span>
+        </div>
+        <div class="setting-item" id="logoutBtn">
+            <div><span class="setting-icon">🚪</span>退出登录</div>
+            <span class="setting-arrow">›</span>
+        </div>
+    </div>
+    
+    <!-- 聊天区域 -->
+    <div class="chat-area" id="chatArea">
+        <div class="chat-header">
+            <div class="chat-title" id="roomTitle">微信风格聊天室</div>
+            <div class="chat-actions">
+                <div class="chat-action" id="createRoomBtn">新建房间</div>
+                <div class="chat-action" id="roomMembersBtn">成员</div>
+                <div class="chat-action" id="roomSettingsBtn">设置</div>
+            </div>
+        </div>
+        
+        <div class="messages-container" id="messagesContainer">
+            <div class="welcome-message">欢迎使用微信风格聊天室！请选择左侧聊天室开始聊天</div>
+        </div>
+        
+        <div class="input-area">
+            <div class="input-tools">
+                <button class="tool-btn" id="emojiBtn" title="表情">😊</button>
+                <button class="tool-btn" id="fileBtn" title="文件">📎</button>
+                <button class="tool-btn" id="imageBtn" title="图片">🖼️</button>
+                <button class="tool-btn" id="cameraBtn" title="拍照">📷</button>
+                <button class="tool-btn" id="voiceBtn" title="语音">🎤</button>
+            </div>
+            <textarea class="message-input" id="messageInput" placeholder="输入消息..." disabled></textarea>
+            <button class="send-btn" id="sendBtn" disabled>发送</button>
+        </div>
+    </div>
+    
+    <!-- 模态框 -->
+    <div class="modal" id="createRoomModal">
+        <div class="modal-content">
+            <div class="modal-title">新建聊天室</div>
+            <input type="text" class="modal-input" id="roomNameInput" placeholder="房间名称（必填）">
+            <textarea class="modal-input" id="roomDescInput" placeholder="房间描述（可选）" rows="3"></textarea>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="cancelCreateRoom">取消</button>
+                <button class="modal-btn primary" id="confirmCreateRoom">创建</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="changeNameModal">
+        <div class="modal-content">
+            <div class="modal-title">修改用户名</div>
+            <input type="text" class="modal-input" id="newNameInput" placeholder="输入新用户名">
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="cancelChangeName">取消</button>
+                <button class="modal-btn primary" id="confirmChangeName">确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 拍照预览 -->
+    <div class="camera-preview" id="cameraPreview">
+        <video class="camera-video" id="cameraLive" autoplay></video>
+        <div class="camera-controls">
+            <button class="camera-btn" id="closeCameraBtn" title="关闭">✕</button>
+            <button class="camera-btn camera-capture" id="captureBtn" title="拍照">📸</button>
+            <button class="camera-btn" id="switchCameraBtn" title="切换摄像头">🔄</button>
+        </div>
+    </div>
+
+    <!-- 引入模块化JS文件 -->
+    <script src="config.js"></script>
+    <script src="chat-manager.js"></script>
+</body>
+</html>
