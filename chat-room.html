@@ -6,8 +6,9 @@
     <title>微信风格聊天室</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
-    <!-- 翻译引擎 -->
+ <script src="lang.js"></script>
 <script src="translator.js"></script>
+<script src="ui-translator.js"></script>
 </head>
 <body>
     <!-- 左侧边栏 -->
@@ -16,6 +17,7 @@
         <div class="sidebar-item" id="contactsTab">👥</div>
         <div class="sidebar-item" id="discoverTab">🔍</div>
         <div class="sidebar-item" id="settingsTab">⚙️</div>
+        
     </div>
     
     <!-- 聊天列表 -->
@@ -89,6 +91,22 @@
     <!-- 聊天区域 -->
     <div class="chat-area" id="chatArea">
         <div class="chat-header">
+<!-- 界面语言 -->
+<div class="setting-item" style="cursor:default;">
+  <div><span class="setting-icon">🌐</span>界面语言</div>
+  <select id="uiLangSelect" style="border:none;background:transparent;font-size:14px;color:#666;">
+    <option value="en">English</option>
+    <option value="zh">中文</option>
+    <option value="ru">Русский</option>
+    <option value="de">Deutsch</option>
+    <option value="fr">Français</option>
+    <option value="es">Español</option>
+    <option value="ja">日本語</option>
+    <option value="ko">한국어</option>
+    <option value="ka">ქართული</option>
+  </select>
+</div>
+
             <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
   <span style="font-size:12px;color:#666">自动翻译</span>
   <label class="switch">

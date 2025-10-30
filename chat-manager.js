@@ -3,7 +3,53 @@
  * 发送 = 1（Sender）  接收 = 0（Receiver）
  * 新增：实时翻译聊天内容（不破坏原文）
  ****************************************************************************************/
+/* 放在最顶部，任何代码之前 */
+const uiLang = localStorage.getItem('uiLang') || 'en';
+/* chat-manager.js 顶部 */
+const translateOne = async (text) => {
+  /* 仍用 MyMemory 在线翻译聊天内容 */
+  const UI_LANG = localStorage.getItem('uiLang') || 'en';
+  const cache = JSON.parse(localStorage.getItem('transCache') || '{}');
+  const key = `${text}::auto->${UI_LANG}`;
+  if (cache[key]) return cache[key];
+
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${UI_LANG}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  if (j.responseStatus === 200 && j.responseData) {
+    cache[key] = j.responseData.translatedText;
+    localStorage.setItem('transCache', JSON.stringify(cache));
+    return j.responseData.translatedText;
+  }
+  return text; // 失败时原文
+};
+
 class ChatManager {
+/* ===== 界面纯 MyMemory 翻译 ===== */
+async translateUI() {
+  const target = localStorage.getItem('uiLang') || 'en';
+  if (target === 'zh') return; // 中文界面跳过
+
+  const cache = JSON.parse(localStorage.getItem('uiTransCache') || '{}');
+
+  function getTextNodes(root) {
+    if (!root || root.nodeType === undefined) return [];
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    const res = [];
+    let n;
+    while (n = w.nextNode()) {
+      const t = n.textContent.trim();
+      if (t && t.length > 1 && !n.parentElement.closest('.message, .trans-bar, script, style, select')) res.push({node: n, text: t});
+    }
+    return res;
+  }
+
+  const nodes = getTextNodes(document.body);
+  for (const it of nodes) {
+    it.node.textContent = await translateOne(it.text);
+  }
+}
+
   constructor() {
     this.supabase = window.supabase.createClient(
       'https://yzbvlywkfuuercapousf.supabase.co',
@@ -28,18 +74,61 @@ class ChatManager {
     this.setupEventListeners();
   }
   async initializeApp() {
-    try {
-      await this.init();
-      await this.loadRooms();
-      await this.loadContacts();
-      this.showChatList();
-      this.showSuccess('应用启动成功！');
-    } catch (e) {
-      console.error(e);
-      this.showError('初始化失败，已启用基础模式');
-      this.showBasicFallback();
-    }
+ await this.translateUI();
+document.getElementById('chatSearch').placeholder = UI_LANG[uiLang].searchChat || '搜索聊天';
+
+  try {
+    await this.init();
+    await this.loadRooms();
+    await this.loadContacts();
+    this.showChatList();
+    this.showSuccess('应用启动成功！');
+  } catch (e) {
+    console.error(e);
+    this.showError('初始化失败，已启用基础模式');
+    this.showBasicFallback();
   }
+
+  /* ===== 界面翻译：等 DOM 完全生成后执行 ===== */
+  await this.translateUI();
+}
+/* ---------- 界面翻译 ---------- */
+async translateUI() {
+  const UI_LANG = localStorage.getItem('uiLang') || 'en';
+  const cache = JSON.parse(localStorage.getItem('uiTransCache') || '{}');
+
+  function getTextNodes(root) {
+    if (!root || root.nodeType === undefined) return [];
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    const res = [];
+    let n;
+    while (n = w.nextNode()) {
+      const t = n.textContent.trim();
+      if (t && t.length > 1 && !n.parentElement.closest('.message, .trans-bar, script, style')) res.push({node: n, text: t});
+    }
+    return res;
+  }
+
+  async function translateOne(text) {
+    const key = `ui:${text}→${UI_LANG}`;
+    if (cache[key]) return cache[key];
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=zh-CN|${UI_LANG}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    if (j.responseStatus === 200 && j.responseData) {
+      cache[key] = j.responseData.translatedText;
+      localStorage.setItem('uiTransCache', JSON.stringify(cache));
+      return j.responseData.translatedText;
+    }
+    return text;
+  }
+
+  const nodes = getTextNodes(document.body);
+  for (const it of nodes) {
+    it.node.textContent = await translateOne(it.text);
+  }
+}
+
 
   /* -------------------- 用户会话 -------------------- */
   async loadUserSession() {
