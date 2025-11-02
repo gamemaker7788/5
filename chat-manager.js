@@ -2202,51 +2202,58 @@ initVoicePlayback() {
 
 async playVoiceMessage(url, voiceElement, duration) {
     if (!url) return;
-    
+
     try {
-        // 停止当前播放
+        // 停止当前音频
         if (this.currentAudio) {
             this.currentAudio.pause();
+            this.currentAudio.currentTime = 0;
             this.resetVoiceWaveform(voiceElement);
         }
-        
-        // 创建音频元素
+
+        // 创建新音频
         this.currentAudio = new Audio(url);
         this.currentAudio.volume = 0.8;
-        
+
+        // 等待音频加载完成再播放
+        await new Promise((resolve, reject) => {
+            this.currentAudio.addEventListener('canplaythrough', resolve, { once: true });
+            this.currentAudio.addEventListener('error', reject, { once: true });
+            setTimeout(() => reject(new Error('音频加载超时')), 5000); // 5秒超时
+        });
+
         // 设置播放状态
         voiceElement.classList.add('playing');
         const waveBars = voiceElement.querySelectorAll('.wave-bar');
-        
-        // 播放动画
+
         this.voicePlayInterval = setInterval(() => {
-            waveBars.forEach((bar, index) => {
-                const height = 5 + Math.random() * 15;
-                bar.style.height = `${height}px`;
+            waveBars.forEach(bar => {
+                bar.style.height = `${5 + Math.random() * 15}px`;
             });
         }, 200);
-        
-        // 播放结束处理
+
+        // 播放结束清理
         this.currentAudio.onended = () => {
             this.resetVoiceWaveform(voiceElement);
             voiceElement.classList.remove('playing');
         };
-        
+
         this.currentAudio.onerror = () => {
             this.showError('语音播放失败');
             this.resetVoiceWaveform(voiceElement);
             voiceElement.classList.remove('playing');
         };
-        
+
         // 开始播放
         await this.currentAudio.play();
-        
+
     } catch (error) {
         this.showError('播放语音失败: ' + error.message);
         this.resetVoiceWaveform(voiceElement);
         voiceElement.classList.remove('playing');
     }
 }
+
 
 resetVoiceWaveform(voiceElement) {
     if (this.voicePlayInterval) {
