@@ -6,9 +6,8 @@
     <title>微信风格聊天室</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
- <script src="lang.js"></script>
+    <!-- 翻译引擎 -->
 <script src="translator.js"></script>
-<script src="ui-translator.js"></script>
 </head>
 <body>
     <!-- 左侧边栏 -->
@@ -17,7 +16,6 @@
         <div class="sidebar-item" id="contactsTab">👥</div>
         <div class="sidebar-item" id="discoverTab">🔍</div>
         <div class="sidebar-item" id="settingsTab">⚙️</div>
-        
     </div>
     
     <!-- 聊天列表 -->
@@ -91,22 +89,6 @@
     <!-- 聊天区域 -->
     <div class="chat-area" id="chatArea">
         <div class="chat-header">
-<!-- 界面语言 -->
-<div class="setting-item" style="cursor:default;">
-  <div><span class="setting-icon">🌐</span>界面语言</div>
-  <select id="uiLangSelect" style="border:none;background:transparent;font-size:14px;color:#666;">
-    <option value="en">English</option>
-    <option value="zh">中文</option>
-    <option value="ru">Русский</option>
-    <option value="de">Deutsch</option>
-    <option value="fr">Français</option>
-    <option value="es">Español</option>
-    <option value="ja">日本語</option>
-    <option value="ko">한국어</option>
-    <option value="ka">ქართული</option>
-  </select>
-</div>
-
             <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
   <span style="font-size:12px;color:#666">自动翻译</span>
   <label class="switch">
@@ -128,14 +110,15 @@
         </div>
         
         <div class="input-area">
-            <div class="input-tools">
-                <button class="tool-btn" id="emojiBtn" title="表情">😊</button>
-                <button class="tool-btn" id="fileBtn" title="文件">📎</button>
-                <button class="tool-btn" id="imageBtn" title="图片">🖼️</button>
-                <button class="tool-btn" id="cameraBtn" title="拍照">📷</button>
-                <button class="tool-btn" id="voiceBtn" title="语音">🎤</button>
-            </div>
-            <textarea class="message-input" id="messageInput" placeholder="输入消息..." disabled></textarea>
+            <!-- 在 input-area 部分的工具按钮中添加语音按钮 -->
+<div class="input-tools">
+    <button class="tool-btn" id="emojiBtn" title="表情">😊</button>
+    <button class="tool-btn" id="voiceBtn" title="语音消息">🎤</button>
+    <button class="tool-btn" id="fileBtn" title="文件">📎</button>
+    <button class="tool-btn" id="imageBtn" title="图片">🖼️</button>
+    <button class="tool-btn" id="cameraBtn" title="拍照">📷</button>
+    <button class="tool-btn" id="videoBtn" title="视频录制">📹</button>
+</div>            <textarea class="message-input" id="messageInput" placeholder="输入消息..." disabled></textarea>
             <button class="send-btn" id="sendBtn" disabled>发送</button>
         </div>
     </div>
@@ -173,7 +156,7 @@
             <button class="camera-btn" id="switchCameraBtn" title="切换摄像头">🔄</button>
         </div>
     </div>
-
+    
     <!-- 引入模块化JS文件 -->
     <script src="config.js"></script>
     <script src="chat-manager.js"></script>
