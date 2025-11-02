@@ -7,15 +7,121 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
     <!-- 翻译引擎 -->
-<script src="translator.js"></script>
+    <script src="translator.js"></script>
+    <!-- 被踢出房间实时监听（内置版） -->
+    <script>
+	
+// 被踢出房间的实时监听
+document.addEventListener('DOMContentLoaded', () => {
+    const waitForChatManager = setInterval(() => {
+        if (window.chatManager && window.chatManager.currentUser && window.chatManager.supabase) {
+            clearInterval(waitForChatManager);
+            startKickListener();
+        }
+    }, 300);
+
+    function startKickListener() {
+        const cm = window.chatManager;
+        const userId = cm.currentUser.userId;
+
+        // 监听成员表删除事件（被踢）
+        cm.supabase
+            .channel('kick_listener_' + userId)
+            .on('postgres_changes', {
+                event: 'DELETE',
+                schema: 'public',
+                table: 'room_members',
+                filter: `user_id=eq.${userId}`
+            }, (payload) => {
+                // 如果被踢的是当前房间
+                if (payload.old.room_id === cm.currentRoom?.id) {
+                    handleKickedFromRoom(cm, payload.old.room_id);
+                }
+            })
+            .subscribe();
+
+        // 监听成员状态更新事件（标记为被踢）
+        cm.supabase
+            .channel('kick_status_listener_' + userId)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'room_members',
+                filter: `user_id=eq.${userId}`
+            }, (payload) => {
+                if (payload.new.status === 'kicked' && payload.new.room_id === cm.currentRoom?.id) {
+                    handleKickedFromRoom(cm, payload.new.room_id);
+                }
+            })
+            .subscribe();
+    }
+
+    function handleKickedFromRoom(chatManager, roomId) {
+        // 立即禁用聊天功能
+        const input = document.getElementById('messageInput');
+        const btn = document.getElementById('sendBtn');
+        if (input) input.disabled = true;
+        if (btn) btn.disabled = true;
+        
+        // 显示被踢提示
+        chatManager.showError('您已被移出该群聊，无法发送消息和查看新消息');
+        
+        // 清空当前房间
+        chatManager.currentRoom = null;
+        
+        // 刷新房间列表（被踢的房间会消失）
+        setTimeout(() => {
+            chatManager.loadRooms();
+            chatManager.showChatList();
+        }, 2000);
+    }
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // 等待 ChatManager 初始化完成
+  const waitForChatManager = setInterval(() => {
+    if (window.chatManager && window.chatManager.currentUser && window.chatManager.supabase) {
+      clearInterval(waitForChatManager);
+      startKickListener();
+    }
+  }, 300);
+
+  function startKickListener() {
+    const cm = window.chatManager;
+    const userId = cm.currentUser.userId;
+
+    cm.supabase
+      .channel('kick_check_' + userId)
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'room_members',
+        filter: `user_id=eq.${userId}`
+      }, (payload) => {
+        // 确保被踢的是当前房间
+        if (payload.old.room_id === cm.currentRoom?.id) {
+          alert('您已被踢出房间');
+          cm.currentRoom = null;
+          cm.loadRooms();          // 刷新房间列表
+          cm.showChatList();       // 强制回到列表页
+        }
+      })
+      .subscribe();
+  }
+});
+</script>
+
 </head>
 <body>
     <!-- 左侧边栏 -->
     <div class="sidebar">
-        <div class="sidebar-item active" id="chatTab">💬</div>
-        <div class="sidebar-item" id="contactsTab">👥</div>
-        <div class="sidebar-item" id="discoverTab">🔍</div>
-        <div class="sidebar-item" id="settingsTab">⚙️</div>
+        <div class="sidebar-item active" id="chatTab">💬💬</div>
+        <div class="sidebar-item" id="contactsTab">👥👥</div>
+        <div class="sidebar-item" id="discoverTab">🔍🔍</div>
+        <div class="sidebar-item" id="settingsTab">⚙⚙️</div>
     </div>
     
     <!-- 聊天列表 -->
@@ -41,23 +147,23 @@
     <!-- 发现页面 -->
     <div class="contacts-container" id="discoverContainer">
         <div class="setting-item">
-            <div><span class="setting-icon">🔄</span>朋友圈</div>
+            <div><span class="setting-icon">🔄🔄</span>朋友圈</div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item">
-            <div><span class="setting-icon">🔍</span>扫一扫</div>
+            <div><span class="setting-icon">🔍🔍</span>扫一扫</div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item">
-            <div><span class="setting-icon">👋</span>摇一摇</div>
+            <div><span class="setting-icon">👋👋</span>摇一摇</div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item">
-            <div><span class="setting-icon">👀</span>看一看</div>
+            <div><span class="setting-icon">👀👀</span>看一看</div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item">
-            <div><span class="setting-icon">🔍</span>搜一搜</div>
+            <div><span class="setting-icon">🔍🔍</span>搜一搜</div>
             <span class="setting-arrow">›</span>
         </div>
     </div>
@@ -65,23 +171,23 @@
     <!-- 设置页面 -->
     <div class="settings-container" id="settingsContainer">
         <div class="setting-item" id="changeNameBtn">
-            <div><span class="setting-icon">👤</span>修改用户名</div>
+            <div><span class="setting-icon">👤👤</span>修改用户名</div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" id="privacySettingsBtn">
-            <div><span class="setting-icon">🔒</span>隐私设置</div>
+            <div><span class="setting-icon">🔒🔒</span>隐私设置</div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" id="notificationSettingsBtn">
-            <div><span class="setting-icon">🔔</span>通知设置</div>
+            <div><span class="setting-icon">🔔🔔</span>通知设置</div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" id="aboutBtn">
-            <div><span class="setting-icon">ℹ️</span>关于我们</div>
+            <div><span class="setting-icon">ℹℹ️</span>关于我们</div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" id="logoutBtn">
-            <div><span class="setting-icon">🚪</span>退出登录</div>
+            <div><span class="setting-icon">🚪🚪</span>退出登录</div>
             <span class="setting-arrow">›</span>
         </div>
     </div>
@@ -90,12 +196,12 @@
     <div class="chat-area" id="chatArea">
         <div class="chat-header">
             <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-  <span style="font-size:12px;color:#666">自动翻译</span>
-  <label class="switch">
-    <input type="checkbox" id="autoTransToggle">
-    <span class="slider"></span>
-  </label>
-</div>
+                <span style="font-size:12px;color:#666">自动翻译</span>
+                <label class="switch">
+                    <input type="checkbox" id="autoTransToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
 
             <div class="chat-title" id="roomTitle">微信风格聊天室</div>
             <div class="chat-actions">
@@ -110,15 +216,15 @@
         </div>
         
         <div class="input-area">
-            <!-- 在 input-area 部分的工具按钮中添加语音按钮 -->
-<div class="input-tools">
-    <button class="tool-btn" id="emojiBtn" title="表情">😊</button>
-    <button class="tool-btn" id="voiceBtn" title="语音消息">🎤</button>
-    <button class="tool-btn" id="fileBtn" title="文件">📎</button>
-    <button class="tool-btn" id="imageBtn" title="图片">🖼️</button>
-    <button class="tool-btn" id="cameraBtn" title="拍照">📷</button>
-    <button class="tool-btn" id="videoBtn" title="视频录制">📹</button>
-</div>            <textarea class="message-input" id="messageInput" placeholder="输入消息..." disabled></textarea>
+            <div class="input-tools">
+                <button class="tool-btn" id="emojiBtn" title="表情">😊😊</button>
+                <button class="tool-btn" id="voiceBtn" title="语音消息">🎤🎤</button>
+                <button class="tool-btn" id="fileBtn" title="文件">📎📎</button>
+                <button class="tool-btn" id="imageBtn" title="图片">🖼🖼🖼️</button>
+                <button class="tool-btn" id="cameraBtn" title="拍照">📷📷</button>
+                <button class="tool-btn" id="videoBtn" title="视频录制">📹📹</button>
+            </div>
+            <textarea class="message-input" id="messageInput" placeholder="输入消息..." disabled></textarea>
             <button class="send-btn" id="sendBtn" disabled>发送</button>
         </div>
     </div>
@@ -147,18 +253,225 @@
         </div>
     </div>
     
+    <!-- 成员管理模态框 -->
+    <div class="modal" id="roomMembersModal">
+        <div class="modal-content">
+            <div class="modal-title">房间成员管理</div>
+            <div class="members-list" id="membersList">
+                <!-- 成员列表将在这里动态生成 -->
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="closeMembersModal">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 房间设置模态框 -->
+    <div class="modal" id="roomSettingsModal">
+        <div class="modal-content">
+            <div class="modal-title">房间设置</div>
+            <div class="setting-option">
+            <button class="modal-btn danger" id="deleteRoomBtn" style="display:none;">删除房间</button>
+
+                <label>房间名称:</label>
+                <input type="text" class="modal-input" id="editRoomName" placeholder="新房间名称">
+            </div>
+            <div class="setting-option">
+                <label>房间描述:</label>
+                <textarea class="modal-input" id="editRoomDesc" placeholder="新房间描述" rows="2"></textarea>
+            </div>
+            <div class="setting-option">
+                <label>房间权限:</label>
+                <select class="modal-input" id="roomPermission">
+                    <option value="public">公开房间</option>
+                    <option value="private">私有房间</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="closeRoomSettings">取消</button>
+                <button class="modal-btn primary" id="saveRoomSettings">保存设置</button>
+                <button class="modal-btn danger" id="deleteRoomBtn" style="display:none;">删除房间</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 成员操作菜单 -->
+    <div class="modal" id="memberActionsModal">
+        <div class="modal-content">
+            <div class="modal-title" id="memberActionsTitle">成员操作</div>
+            <div class="member-actions" id="memberActionsList">
+                <!-- 操作按钮将在这里动态生成 -->
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="closeMemberActions">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 拍照预览 -->
     <div class="camera-preview" id="cameraPreview">
         <video class="camera-video" id="cameraLive" autoplay></video>
         <div class="camera-controls">
-            <button class="camera-btn" id="closeCameraBtn" title="关闭">✕</button>
-            <button class="camera-btn camera-capture" id="captureBtn" title="拍照">📸</button>
-            <button class="camera-btn" id="switchCameraBtn" title="切换摄像头">🔄</button>
+            <button class="camera-btn" id="closeCameraBtn" title="关闭">✕✕</button>
+            <button class="camera-btn camera-capture" id="captureBtn" title="拍照">📸📸</button>
+            <button class="camera-btn" id="switchCameraBtn" title="切换摄像头">🔄🔄</button>
         </div>
     </div>
-    
+
     <!-- 引入模块化JS文件 -->
     <script src="config.js"></script>
     <script src="chat-manager.js"></script>
+    
+    <style>
+        /* 成员管理相关样式 */
+        .members-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .member-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .member-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .member-name {
+            font-weight: 500;
+        }
+        
+        .member-role {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .member-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .action-btn.kick {
+            background: #ff4757;
+            color: white;
+        }
+        
+        .action-btn.promote {
+            background: #007acc;
+            color: white;
+        }
+        
+        .action-btn.demote {
+            background: #ffa502;
+            color: white;
+        }
+        
+        .setting-option {
+            margin-bottom: 15px;
+        }
+        
+        .setting-option label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .modal-btn.danger {
+            background: #ff4757;
+            color: white;
+        }
+        
+        .modal-btn.danger:hover {
+            background: #ff3742;
+        }
+        
+        .role-owner {
+            color: #ff4757;
+            font-weight: bold;
+        }
+        
+        .role-admin {
+            color: #007acc;
+            font-weight: bold;
+        }
+        
+        .role-member {
+            color: #666;
+        }
+    </style>
+    <!-- 成员管理模态框 -->
+<div class="modal" id="roomMembersModal">
+    <div class="modal-content">
+        <div class="modal-title">房间成员管理</div>
+        <div class="members-list" id="membersList">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <span>加载中...</span>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-btn secondary" id="closeMembersModal">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 房间设置模态框 -->
+<div class="modal" id="roomSettingsModal">
+    <div class="modal-content">
+        <div class="modal-title">房间设置</div>
+        <div class="setting-option">
+            <label>房间名称:</label>
+            <input type="text" class="modal-input" id="editRoomName" placeholder="新房间名称">
+        </div>
+        <div class="setting-option">
+            <label>房间描述:</label>
+            <textarea class="modal-input" id="editRoomDesc" placeholder="新房间描述" rows="2"></textarea>
+        </div>
+        <div class="setting-option">
+            <label>房间权限:</label>
+            <select class="modal-input" id="roomPermission">
+                <option value="public">公开房间</option>
+                <option value="private">私有房间</option>
+            </select>
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-btn secondary" id="closeRoomSettings">取消</button>
+            <button class="modal-btn primary" id="saveRoomSettings">保存设置</button>
+            <button class="modal-btn danger" id="deleteRoomBtn" style="display:none;">删除房间</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

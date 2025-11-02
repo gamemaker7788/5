@@ -1398,10 +1398,11 @@ input:checked + .slider:before{transform:translateX(14px)}
 }
 
 .voice-record-container {
+  padding: 20px;
   background: white;
   border-radius: 15px;
-  width: 300px;
-  max-width: 90%;
+  width: 1000px;
+  max-width: 50vw;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
@@ -1616,4 +1617,576 @@ input:checked + .slider:before{transform:translateX(14px)}
     max-width: 180px;
   }
 }
+}
+/* 语音录制控制按钮 - 水平排列（深灰色主题） */
+.voice-record-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #2a2f3b; /* 深灰色背景 */
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.voice-control-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 10px;
+    background: linear-gradient(145deg, #3a3f4b, #2a2f3b); /* 立体感渐变 */
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 80px;
+    min-height: 80px;
+    box-shadow: 
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        0 4px 8px rgba(0, 0, 0, 0.3);
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 500;
+}
+
+/* 按钮图标样式 */
+.control-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* 按钮文字样式 */
+.voice-control-btn span {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* 悬停效果 */
+.voice-control-btn:hover:not(:disabled) {
+    background: linear-gradient(145deg, #4a4f5b, #3a3f4b);
+    transform: translateY(-2px);
+    box-shadow: 
+        inset 0 2px 4px rgba(255, 255, 255, 0.15),
+        0 6px 12px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 按下效果 */
+.voice-control-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 
+        inset 0 2px 6px rgba(0, 0, 0, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 禁用状态 */
+.voice-control-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none;
+}
+
+/* 发送按钮特殊样式 */
+.send-btn {
+    background: linear-gradient(145deg, #27ae60, #219653) !important;
+    border-color: rgba(39, 174, 96, 0.3);
+}
+
+.send-btn:hover:not(:disabled) {
+    background: linear-gradient(145deg, #2ecc71, #27ae60) !important;
+    border-color: rgba(46, 204, 113, 0.4);
+}
+
+/* 录制按钮特殊样式 */
+#voiceRecordBtn {
+    background: linear-gradient(145deg, #2980b9, #21618c) !important;
+    border-color: rgba(41, 128, 185, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+    .voice-record-controls {
+        gap: 8px;
+        padding: 12px;
+    }
+    
+    .voice-control-btn {
+        min-width: 70px;
+        min-height: 70px;
+        padding: 12px 8px;
+    }
+    
+    .control-icon {
+        font-size: 20px;
+        margin-bottom: 6px;
+    }
+    
+    .voice-control-btn span {
+        font-size: 11px;
+    }
+}
+/* 视频录制预览样式 */
+.video-preview {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 600px;
+    height: 70vh;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 12px;
+    z-index: 3000;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.video-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px 12px 0 0;
+}
+
+.video-title {
+    color: white;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.video-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+.video-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.video-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.video-live {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.recording-indicator {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.recording-dot {
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.video-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0 0 12px 12px;
+}
+
+.video-control-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+}
+
+.video-control-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.video-control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.record-btn {
+    width: 60px;
+    height: 60px;
+    background: #07c160;
+}
+
+.record-btn.recording {
+    background: #ff4757;
+}
+
+.record-icon, .stop-icon {
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 2px;
+}
+
+.stop-icon {
+    border-radius: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .video-preview {
+        width: 95%;
+        height: 80vh;
+    }
+    
+    .video-controls {
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .video-control-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 16px;
+    }
+    
+    .record-btn {
+        width: 55px;
+        height: 55px;
+    }
+}
+.video-preview-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.video-preview-modal {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.video-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.video-preview-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.video-close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+}
+
+.video-preview-content {
+    position: relative;
+    padding: 20px;
+}
+
+.video-live {
+    width: 100%;
+    max-height: 300px;
+    background: #000;
+    border-radius: 8px;
+}
+
+.recording-indicator {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.recording-dot {
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+.video-preview-controls {
+    display: flex;
+    gap: 10px;
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.video-control-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.record-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.stop-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.switch-btn {
+    background: #17a2b8;
+    color: white;
+}
+
+.video-control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.video-preview-info {
+    padding: 10px 20px;
+    background: #f1f3f4;
+    font-size: 12px;
+    color: #666;
+}
+
+.video-preview-info p {
+    margin: 5px 0;
+}
+}
+/* 房间统计样式 */
+.room-stats {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #07c160;
+}
+
+.room-stats h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.room-stats p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+/* 成员状态样式 */
+.member-role .muted {
+    color: #ff6b6b;
+}
+
+.member-role .banned {
+    color: #ff4757;
+    text-decoration: line-through;
+}
+
+/* 新的操作按钮样式 */
+.action-btn.mute {
+    background: #ffa502;
+    color: white;
+}
+
+.action-btn.unmute {
+    background: #2ed573;
+    color: white;
+}
+
+.action-btn.unban {
+    background: #57606f;
+    color: white;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 权限提示样式 */
+.permission-hint {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+}
+
+.private-room {
+    border-left: 3px solid #ff6b6b;
+}
+
+.public-room {
+    border-left: 3px solid #2ed573;
+}
+/* 被踢用户样式 */
+.kicked-user {
+    opacity: 0.6;
+    background-color: #ffe6e6 !important;
+}
+
+.kicked-message {
+    color: #999;
+    font-style: italic;
+}
+
+.access-denied {
+    text-align: center;
+    padding: 40px 20px;
+    color: #ff4757;
+}
+
+.access-denied-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.access-denied-text {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+/* 成员视图切换 */
+.member-view-toggle {
+    display: flex;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    padding: 5px;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.toggle-btn.active {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 被移出成员样式 */
+.kicked-member {
+    opacity: 0.7;
+    background: #fff5f5;
+}
+
+.kicked-member .member-name {
+    text-decoration: line-through;
+}
+
+/* 成员统计样式 */
+.room-stats {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 4px solid #07c160;
+}
+
+.room-stats h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.room-stats p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+/* 在线状态 */
+.member-name {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
