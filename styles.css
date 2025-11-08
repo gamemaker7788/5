@@ -1203,7 +1203,10 @@ input:checked + .slider:before{transform:translateX(14px)}
 
 /* 翻译条 */
 .trans-bar{font-size:12px;color:#666;background:#f0f0f0;border-radius:4px;padding:4px 8px;margin-top:4px;display:none}
-.trans-bar.show{display:block}
+.trans-bar.show {
+    display: block !important;
+}
+
 .message-video-container {
   display: flex;
   justify-content: center;
@@ -2189,4 +2192,71 @@ input:checked + .slider:before{transform:translateX(14px)}
     display: flex;
     align-items: center;
     gap: 5px;
+}
+.emoji-grid {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 3000;
+  width: 320px;
+  max-height: 200px;
+  overflow: hidden;
+}
+
+.emoji-grid-content {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 180px;
+}
+
+.emoji-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.2s;
+}
+
+.emoji-img:hover {
+  transform: scale(1.1);
+}
+/* 表情网格关闭按钮 */
+.emoji-close-btn {
+    width: 28px;
+    height: 28px;
+    background: #f44336;          /* 微信红 */
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all .25s ease;
+    box-shadow: 0 2px 6px rgba(244, 67, 54, .35);
+}
+
+.emoji-close-btn:hover {
+    background: #d32f2f;
+    transform: scale(1.12);
+}
+
+.emoji-close-btn:active {
+    transform: scale(.95);
+}
+/* 语言设置弹窗专用 */
+.setting-option {
+    margin-bottom: 15px;
+}
+.setting-option label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
 }

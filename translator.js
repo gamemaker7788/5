@@ -6,7 +6,10 @@
 
 /* ==========  用户配置  ========== */
 const USE_GOOGLE_DETECT = false;   // true=Google 检测，false=本地正则
-const USER_LANG         = localStorage.getItem('userLanguage') || 'zh-CN';
+function getUserLang() {
+  return window.USER_LANG || localStorage.getItem('userLanguage') || 'zh-CN';
+}
+
 const TRANS_CACHE       = JSON.parse(localStorage.getItem('transCache') || '{}');
 
 /* ==========  语言元数据  ========== */
@@ -75,7 +78,8 @@ async function appendTranslation(msgBubble, originalText) {
     bar.className = 'trans-bar';
     msgBubble.appendChild(bar);
   }
-  const translated = await translateText(originalText, 'auto', USER_LANG);
+  const translated = await translateText(originalText, 'auto', getUserLang());
+
   if (translated) {
     bar.textContent = `翻译：${translated}`;
     bar.classList.add('show');

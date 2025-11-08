@@ -44,6 +44,108 @@ this.kickSubscription = null;
         this.bindMethods();
         this.init();
     }
+showLangSettings() {
+    // 把当前值回显到弹窗
+    const saved = localStorage.getItem('userLanguage') || 'zh-CN';
+    document.getElementById('targetLangSelect').value = saved;
+    document.getElementById('autoTransToggle').checked =
+        localStorage.getItem('autoTransEnabled') === 'true';
+    document.getElementById('langSettingsModal').style.display = 'block';
+}
+
+hideLangSettings() {
+    document.getElementById('langSettingsModal').style.display = 'none';
+}
+saveLangSettings() {
+    const tgt = document.getElementById('targetLangSelect').value;
+    const on = document.getElementById('autoTransToggle').checked;
+
+    localStorage.setItem('userLanguage', tgt);
+    localStorage.setItem('autoTransEnabled', on);
+	localStorage.removeItem('transCache');
+    // 实时更新 translator.js 的变量
+    window.USER_LANG = tgt;
+    window.TRANS_CACHE = JSON.parse(localStorage.getItem('transCache') || '{}');
+
+    this.showSuccess('语言设置已保存');
+    this.hideLangSettings();
+}
+
+	// 加载表情图片列表
+async loadEmojis() {
+  const { data, error } = await this.supabase
+    .from('emojis')
+    .select('image_url')
+    .order('id');
+
+  if (error) {
+    console.error('加载表情失败:', error);
+    return [];
+  }
+  return data;
+}
+// 显示表情网格弹窗
+async showEmojiGrid() {
+  const emojis = await this.loadEmojis();
+  if (!emojis.length) return;
+
+  let grid = document.getElementById('emojiGrid');
+  if (grid) grid.remove();
+
+  grid = document.createElement('div');
+  grid.id = 'emojiGrid';
+  grid.className = 'emoji-grid';
+  grid.innerHTML = `
+    <div class="emoji-grid-inner">
+      <div class="emoji-header">
+        <span class="emoji-title">选择表情</span>
+        <button class="emoji-close-btn" aria-label="关闭">✕</button>
+      </div>
+      <div class="emoji-grid-content">
+        ${emojis.map(e => `
+          <img src="${e.image_url}" class="emoji-img" onclick="chatManager.sendEmojiImage('${e.image_url}')" />
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  // 点空白处关闭
+  grid.addEventListener('click', e => {
+    if (e.target === grid) this.hideEmojiGrid();
+  });
+  // 点 ╳ 关闭
+  grid.querySelector('.emoji-close-btn').addEventListener('click', () => this.hideEmojiGrid());
+
+  document.body.appendChild(grid);
+}
+
+
+// 发送表情图片（和普通图片一样）
+async sendEmojiImage(imageUrl) {
+  if (!this.currentRoom || !imageUrl) return;
+
+  try {
+    await this.supabase.from('chat_messages').insert({
+      content: '[表情]',
+      room_id: this.currentRoom.id,
+      user_id: this.currentUser.userId,
+      message_type: 'image',
+      file_url: imageUrl,
+      file_name: 'emoji.png',
+      direction: 1
+    });
+
+    this.hideEmojiGrid();
+  } catch (e) {
+    this.showError('发送表情失败: ' + e.message);
+  }
+}
+
+// 关闭表情网格
+hideEmojiGrid() {
+  const grid = document.getElementById('emojiGrid');
+  if (grid) grid.remove();
+}
 
     /* -------------------- 方法绑定 -------------------- */
     bindMethods() {
@@ -168,6 +270,11 @@ async loadRoomsWithRetry(maxRetries = 3) {
         this.bindButton('contactsTab', 'click', () => this.showContacts());
         this.bindButton('discoverTab', 'click', () => this.showDiscover());
         this.bindButton('settingsTab', 'click', () => this.showSettings());
+	this.bindButton('emojiBtn', 'click', () => this.showEmojiGrid());
+	// 语言设置
+this.bindButton('langSettingsBtn', 'click', () => this.showLangSettings());
+this.bindButton('closeLangSettings', 'click', () => this.hideLangSettings());
+this.bindButton('saveLangSettings', 'click', () => this.saveLangSettings());
 
         // 聊天功能
         this.bindButton('sendBtn', 'click', () => this.sendMessage());
@@ -1279,7 +1386,19 @@ async loadMessages(roomId) {
         
         filteredMessages.forEach(m => this.addMessageToChat(m, m.chat_users.username));
         this.scrollToBottom();
-        
+        // ✅ 只翻译文本消息，跳过图片/语音/文件
+if (localStorage.getItem('autoTransEnabled') === 'true') {
+    setTimeout(() => {
+        document.querySelectorAll('#messagesContainer .message').forEach(msgDiv => {
+            const bubble = msgDiv.querySelector('.message-bubble');
+            const textEl = bubble?.querySelector('.message-text');
+            if (textEl && textEl.textContent.trim()) {
+                window.translateMessage(msgDiv);
+            }
+        });
+    }, 300);
+}
+
     } catch (e) { 
         this.showError('加载消息失败'); 
     }
@@ -1354,7 +1473,7 @@ addMessageToChat(msg, username) {
     this.scrollToBottom();
 
     // 自动翻译文本消息
-    if (msg.message_type === 'text' && document.getElementById('autoTransToggle')?.checked) {
+    if (msg.message_type === 'text' && localStorage.getItem('autoTransEnabled') === 'true') {
         setTimeout(() => window.translateMessage(div), 0);
     }
 }
@@ -1376,7 +1495,7 @@ createImageMessageHtml(msg) {
 createFileMessageHtml(msg) {
     return `
         <div class="message-file">
-            <div class="file-icon">📄📄</div>
+            <div class="file-icon">📄</div>
             <div class="file-info">
                 <div class="file-name">${this.escapeHtml(msg.file_name)}</div>
                 <a href="${msg.file_url}" download="${this.escapeHtml(msg.file_name)}" class="file-link">下载文件</a>
@@ -1823,7 +1942,7 @@ showVoiceRecordUI() {
             <div class="voice-record-container">
                 <div class="voice-record-header">
                     <div class="voice-record-title">语音录制</div>
-                    <button class="voice-close-btn" id="closeVoiceRecord">✕✕</button>
+                    <button class="voice-close-btn" id="closeVoiceRecord">✕</button>
                 </div>
                 
                 <div class="voice-record-main">
@@ -1852,12 +1971,12 @@ showVoiceRecordUI() {
                 
                    <div class="voice-record-controls">
                         <button class="voice-control-btn" id="voiceRecordBtn" title="开始录制">
-                            <div class="control-icon">⏺⏺⏺</div>
+                            <div class="control-icon">⏺</div>
                             <span>录制</span>
                         </button>
                         
                         <button class="voice-control-btn" id="voicePauseBtn" title="暂停" disabled>
-                            <div class="control-icon">⏸⏸⏸</div>
+                            <div class="control-icon">⏸</div>
                             <span>暂停</span>
                         </button>
                         
@@ -1867,12 +1986,12 @@ showVoiceRecordUI() {
                        </button>
                         
                         <button class="voice-control-btn" id="voiceStopBtn" title="停止">
-                            <div class="control-icon">⏹⏹⏹</div>
+                            <div class="control-icon">⏹</div>
                             <span>停止</span>
                         </button>
                         
                         <button class="voice-control-btn send-btn" id="voiceSendBtn" title="发送" disabled>
-                            <div class="control-icon">📤📤</div>
+                            <div class="control-icon">📤</div>
                             <span>发送</span>
                         </button>
                     </div>
@@ -2276,7 +2395,7 @@ createVideoPreview() {
             <div class="video-preview-modal">
                 <div class="video-preview-header">
                     <div class="video-preview-title">视频录制</div>
-                    <button class="video-close-btn" id="closeVideoPreview">✕✕</button>
+                    <button class="video-close-btn" id="closeVideoPreview">✕</button>
                 </div>
                 
                 <div class="video-preview-content">
@@ -2291,17 +2410,17 @@ createVideoPreview() {
                 
                 <div class="video-preview-controls">
                     <button class="video-control-btn record-btn" id="startVideoRecord">
-                        <span class="record-icon">●</span>
+                        <span class="record-icon">📹</span>
                         <span>开始录制</span>
                     </button>
                     
                     <button class="video-control-btn stop-btn" id="stopVideoRecord" disabled>
-                        <span class="stop-icon">■</span>
+                        <span class="stop-icon">🤚</span>
                         <span>停止录制</span>
                     </button>
                     
                     <button class="video-control-btn switch-btn" id="switchVideoCamera">
-                        <span class="switch-icon">🔄🔄</span>
+                        <span class="switch-icon">🔄</span>
                         <span>切换摄像头</span>
                     </button>
                 </div>
@@ -2774,7 +2893,8 @@ window.translateMessage = async (msgDiv) => {
     const original = textEl.textContent.trim();
     if (!original) return;
     
-    await translator.appendTranslation(bubble, original);
+    await appendTranslation(bubble, original);
+
 };
 
 // 全局暴露

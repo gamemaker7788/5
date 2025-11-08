@@ -1,168 +1,1053 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>格鲁吉亚行程统计</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root{
-      --bg:#f5f7fa;
-      --fg:#333;
-      --card:#fff;
-      --primary:#3498db;
-      --shadow:0 2px 8px rgba(0,0,0,.08);
-    }
-    @media (prefers-color-scheme: dark){
-      :root{
-        --bg:#121212;
-        --fg:#e0e0e0;
-        --card:#1e1e1e;
-        --primary:#4dabf7;
-        --shadow:0 2px 8px rgba(0,0,0,.35);
-      }
-    }
-    *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
-    body{background:var(--bg);color:var(--fg);padding:20px;transition:background .3s,color .3s}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.2rem}
-    .card{background:var(--card);border-radius:12px;padding:1.2rem;box-shadow:var(--shadow)}
-    .num{font-size:2rem;font-weight:700;color:var(--primary)}
-    .label{font-size:.9rem;opacity:.8}
-    .col-2{grid-column:span 2}
-    canvas{max-height:280px}
-    @media(max-width:600px){.col-2{grid-column:span 1}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>格鲁吉亚行程数据统计</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(to right, #2c3e50, #34495e);
+            color: white;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .filters {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .filter-item input, .filter-item select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            margin-right: 0.5rem;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-top: 1rem;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .stat-item {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .data-table {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #7f8c8d;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-completed {
+            background-color: #f1f8e9;
+            color: #689f38;
+        }
+        
+        .status-pending {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .detail-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .detail-section {
+            margin-bottom: 2rem;
+        }
+        
+        .detail-section h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .detail-item {
+            margin-bottom: 0.8rem;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+            }
+            
+            .filter-item {
+                width: 100%;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>格鲁吉亚行程统计</h1>
-  </header>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div>
+                    <h1>格鲁吉亚行程数据统计</h1>
+                    <p class="subtitle">航班号、导游类型、行程安排、乘客信息、附加服务分析</p>
+                </div>
+                <div>
+                    <span id="record-count">0条记录</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="filters">
+            <div class="filter-item">
+                <label for="date-from">统计日期从</label>
+                <input type="date" id="date-from">
+            </div>
+            <div class="filter-item">
+                <label for="date-to">至</label>
+                <input type="date" id="date-to">
+            </div>
+            <div class="filter-item">
+                <label for="guide-type">导游类型</label>
+                <select id="guide-type">
+                    <option value="">全部</option>
+                    <option value="no">无需导游</option>
+                    <option value="chinese">中文导游</option>
+                    <option value="english">英文导游</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="service-type">服务类型</label>
+                <select id="service-type">
+                    <option value="">全部</option>
+                    <option value="机场接送">机场接送</option>
+                    <option value="多日游">多日游</option>
+                    <option value="葡萄酒之旅">葡萄酒之旅</option>
+                    <option value="徒步旅行">徒步旅行</option>
+                    <option value="黑海度假">黑海度假</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="visibility: hidden;">统计</label>
+                <button class="btn" onclick="loadStatistics()">生成统计</button>
+                <button class="btn btn-success" onclick="exportStatistics()">导出数据</button>
+            </div>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>导游类型分布</h3>
+                <div class="chart-container">
+                    <canvas id="guide-type-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>服务类型分布</h3>
+                <div class="chart-container">
+                    <canvas id="service-type-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>航班号统计</h3>
+                <div class="chart-container">
+                    <canvas id="flight-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>价格区间分布</h3>
+                <div class="chart-container">
+                    <canvas id="price-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="total-itineraries">0</div>
+                <div class="stat-label">总行程数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-passengers">0</div>
+                <div class="stat-label">总乘客数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-days">0</div>
+                <div class="stat-label">平均天数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-price">0</div>
+                <div class="stat-label">平均价格(USD)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-revenue">0</div>
+                <div class="stat-label">总收入(USD)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="most-popular-service">-</div>
+                <div class="stat-label">最受欢迎服务</div>
+            </div>
+        </div>
+        
+        <div class="data-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>服务类型</th>
+                        <th>出行日期</th>
+                        <th>航班号</th>
+                        <th>导游类型</th>
+                        <th>乘客数</th>
+                        <th>行程天数</th>
+                        <th>总价格</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="data-body">
+                    <tr>
+                        <td colspan="10" class="loading">加载中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 详情模态框 -->
+    <div id="detail-modal" class="detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>行程详情统计</h2>
+                <span class="close" onclick="closeModal('detail-modal')">&times;</span>
+            </div>
+            <div id="modal-body">
+                <!-- 详情内容将通过JavaScript生成 -->
+            </div>
+        </div>
+    </div>
 
-  <main class="grid">
-    <section class="card"><div class="num" id="total-orders">-</div><div class="label">订单总数</div></section>
-    <section class="card"><div class="num" id="total-sales">-</div><div class="label">销售总额（USD）</div></section>
-    <section class="card"><div class="num" id="avg-price">-</div><div class="label">客单价（USD）</div></section>
-    <section class="card"><div class="num" id="total-guests">-</div><div class="label">接待人数</div></section>
-
-    <section class="card col-2"><canvas id="status-chart"></canvas></section>
-    <section class="card col-2"><canvas id="guide-chart"></canvas></section>
-    <section class="card col-2"><canvas id="sales-trend"></canvas></section>
-    <section class="card col-2"><canvas id="price-dist"></canvas></section>
-  </main>
-
-  <script>
-    /* ========== 配置 ========== */
-    const SUPABASE_URL  = 'https://fezxhcmiefdbvqmhczut.supabase.co';
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-    /* ========== 工具函数 ========== */
-    const $ = id => document.getElementById(id);
-    const chartFont = { family: 'Segoe UI', size: 12 };
-
-    /* ========== 1. 拉数据 ========== */
-    async function fetchData() {
-      const { data, error } = await sb
-        .from('itineraries')
-        .select(`id, order_number, total_price, guide_type, start_date, end_date, passengers(name)`);
-      if (error) { alert('读取失败：' + error.message); return []; }
-      return data;
-    }
-
-    /* ========== 2. 计算指标 ========== */
-    function calcMetrics(list) {
-      const totalOrders = list.length;
-      const totalSales = list.reduce((s, it) => s + (+it.total_price || 0), 0);
-      const avgPrice = totalOrders ? (totalSales / totalOrders).toFixed(0) : 0;
-      const totalGuests = list.reduce((s, it) => s + (it.passengers?.length || 0), 0);
-      $('total-orders').textContent = totalOrders;
-      $('total-sales').textContent = totalSales.toLocaleString();
-      $('avg-price').textContent = avgPrice;
-      $('total-guests').textContent = totalGuests;
-      return { totalOrders, totalSales, avgPrice, totalGuests };
-    }
-
-    /* ========== 3. 画图 ========== */
-    function drawCharts(list) {
-      const statusCtx = $('status-chart').getContext('2d');
-      const guideCtx  = $('guide-chart').getContext('2d');
-      const salesCtx  = $('sales-trend').getContext('2d');
-      const priceCtx  = $('price-dist').getContext('2d');
-
-      /* 状态分布 */
-      const status = { 未开始: 0, 进行中: 0, 已结束: 0 };
-      const today = new Date();
-      list.forEach(it => {
-        const s = new Date(it.start_date), e = new Date(it.end_date);
-        if (today < s) status['未开始']++;
-        else if (today > e) status['已结束']++;
-        else status['进行中']++;
-      });
-      new Chart(statusCtx, {
-        type: 'doughnut',
-        data: {
-          labels: Object.keys(status),
-          datasets: [{ data: Object.values(status), backgroundColor: ['#f39c12', '#27ae60', '#e74c3c'] }]
-        },
-        options: { plugins: { legend: { position: 'bottom' }, title: { display: true, text: '订单状态分布' } } }
-      });
-
-      /* 导游类型 */
-      const guide = { 无需导游: 0, 中文导游: 0, 英文导游: 0 };
-      list.forEach(it => { guide[{ no: '无需导游', chinese: '中文导游', english: '英文导游' }[it.guide_type] || '无需导游']++; });
-      new Chart(guideCtx, {
-        type: 'pie',
-        data: {
-          labels: Object.keys(guide),
-          datasets: [{ data: Object.values(guide), backgroundColor: ['#95a5a6', '#3498db', '#2ecc71'] }]
-        },
-        options: { plugins: { legend: { position: 'bottom' }, title: { display: true, text: '导游类型占比' } } }
-      });
-
-      /* 月度销售趋势 */
-      const monthSales = {};
-      list.forEach(it => {
-        const m = it.start_date.substring(0, 7); // yyyy-mm
-        monthSales[m] = (monthSales[m] || 0) + (+it.total_price || 0);
-      });
-      const months = Object.keys(monthSales).sort();
-      new Chart(salesCtx, {
-        type: 'line',
-        data: {
-          labels: months,
-          datasets: [{ label: '销售额 (USD)', data: months.map(m => monthSales[m]), borderColor: '#3498db', tension: .3 }]
-        },
-        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-      });
-
-      /* 价格区间 */
-      const ranges = { '<500': 0, '500-999': 0, '1000-1999': 0, '≥2000': 0 };
-      list.forEach(it => {
-        const p = +it.total_price || 0;
-        if (p < 500) ranges['<500']++;
-        else if (p < 1000) ranges['500-999']++;
-        else if (p < 2000) ranges['1000-1999']++;
-        else ranges['≥2000']++;
-      });
-      new Chart(priceCtx, {
-        type: 'bar',
-        data: {
-          labels: Object.keys(ranges),
-          datasets: [{ label: '订单数', data: Object.values(ranges), backgroundColor: '#1abc9c' }]
-        },
-        options: { plugins: { legend: { display: false }, title: { display: true, text: '订单价格分布' } } }
-      });
-    }
-
-    /* ========== 4. 运行流程 ========== */
-    async function run() {
-      const list = await fetchData();
-      const metrics = calcMetrics(list);
-      drawCharts(list);
-    }
-    run();
-  </script>
+    <script>
+        // Supabase配置
+        const SUPABASE_URL = 'https://fezxhcmiefdbvqmhczut.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlenhoY21pZWZkYnZxbWhjenV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjE1MDYsImV4cCI6MjA3MjczNzUwNn0.MdXghSsixHXeYhZKbMYuJGehMUvdbtixGNjMmBPMKKU';
+        
+        let supabase = null;
+        let currentData = [];
+        let charts = {};
+        
+        // 初始化Supabase
+        function initSupabase() {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Supabase初始化成功');
+                return true;
+            } catch (error) {
+                console.error('Supabase初始化失败:', error);
+                showStatus('Supabase初始化失败: ' + error.message, 'error');
+                return false;
+            }
+        }
+        
+        // 加载统计数据
+        async function loadStatistics() {
+            if (!supabase) {
+                if (!initSupabase()) return;
+            }
+            
+            try {
+                const dateFrom = document.getElementById('date-from').value;
+                const dateTo = document.getElementById('date-to').value;
+                const guideType = document.getElementById('guide-type').value;
+                const serviceType = document.getElementById('service-type').value;
+                
+                let query = supabase
+                    .from('itineraries')
+                    .select(`
+                        *,
+                        itinerary_days (*),
+                        passengers (*),
+                        extra_services (*)
+                    `);
+                
+                // 应用筛选条件
+                if (dateFrom) {
+                    query = query.gte('start_date', dateFrom);
+                }
+                
+                if (dateTo) {
+                    query = query.lte('end_date', dateTo);
+                }
+                
+                if (guideType) {
+                    query = query.eq('guide_type', guideType);
+                }
+                
+                if (serviceType) {
+                    query = query.eq('service_type', serviceType);
+                }
+                
+                const { data, error } = await query.order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                currentData = data;
+                document.getElementById('record-count').textContent = `${data.length}条记录`;
+                
+                renderStatistics(data);
+                renderDataTable(data);
+                
+            } catch (error) {
+                console.error('加载数据错误:', error);
+                showStatus('加载数据失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 渲染统计图表
+        function renderStatistics(data) {
+            if (data.length === 0) {
+                showStatus('没有找到相关数据', 'info');
+                return;
+            }
+            
+            // 计算基本统计数据
+            calculateBasicStats(data);
+            
+            // 导游类型分布
+            renderGuideTypeChart(data);
+            
+            // 服务类型分布
+            renderServiceTypeChart(data);
+            
+            // 航班号统计
+            renderFlightChart(data);
+            
+            // 价格区间分布
+            renderPriceChart(data);
+        }
+        
+        // 计算基本统计数据
+        function calculateBasicStats(data) {
+            // 总行程数
+            document.getElementById('total-itineraries').textContent = data.length;
+            
+            // 总乘客数
+            const totalPassengers = data.reduce((sum, item) => sum + (item.passengers?.length || 0), 0);
+            document.getElementById('total-passengers').textContent = totalPassengers;
+            
+            // 平均天数
+            const avgDays = data.reduce((sum, item) => sum + (item.itinerary_days?.length || 0), 0) / data.length;
+            document.getElementById('avg-days').textContent = avgDays.toFixed(1);
+            
+            // 平均价格和总收入
+            const totalRevenue = data.reduce((sum, item) => sum + (parseFloat(item.total_price) || 0), 0);
+            const avgPrice = totalRevenue / data.length;
+            document.getElementById('avg-price').textContent = avgPrice.toFixed(0);
+            document.getElementById('total-revenue').textContent = totalRevenue.toFixed(0);
+            
+            // 最受欢迎服务
+            const serviceCounts = {};
+            data.forEach(item => {
+                const service = item.service_type || '未知';
+                serviceCounts[service] = (serviceCounts[service] || 0) + 1;
+            });
+            
+            const mostPopular = Object.entries(serviceCounts).reduce((max, [service, count]) => 
+                count > max.count ? { service, count } : max, { service: '-', count: 0 }
+            );
+            document.getElementById('most-popular-service').textContent = mostPopular.service;
+        }
+        
+        // 渲染导游类型图表
+        function renderGuideTypeChart(data) {
+            const guideTypes = {
+                'no': '无需导游',
+                'chinese': '中文导游',
+                'english': '英文导游'
+            };
+            
+            const counts = {
+                'no': 0,
+                'chinese': 0,
+                'english': 0,
+                '其他': 0
+            };
+            
+            data.forEach(item => {
+                const type = item.guide_type;
+                if (guideTypes[type]) {
+                    counts[type]++;
+                } else {
+                    counts['其他']++;
+                }
+            });
+            
+            const ctx = document.getElementById('guide-type-chart').getContext('2d');
+            
+            if (charts.guideType) {
+                charts.guideType.destroy();
+            }
+            
+            charts.guideType = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.values(guideTypes).concat(['其他']),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const percentage = ((value / data.length) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染服务类型图表
+        function renderServiceTypeChart(data) {
+            const serviceCounts = {};
+            data.forEach(item => {
+                const service = item.service_type || '未知';
+                serviceCounts[service] = (serviceCounts[service] || 0) + 1;
+            });
+            
+            const sortedServices = Object.entries(serviceCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10); // 只显示前10个
+            
+            const ctx = document.getElementById('service-type-chart').getContext('2d');
+            
+            if (charts.serviceType) {
+                charts.serviceType.destroy();
+            }
+            
+            charts.serviceType = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedServices.map(([service]) => service),
+                    datasets: [{
+                        label: '行程数量',
+                        data: sortedServices.map(([, count]) => count),
+                        backgroundColor: '#3498db'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染航班号图表
+        function renderFlightChart(data) {
+            const flightCounts = {};
+            data.forEach(item => {
+                const flight = item.flight_number || '无航班号';
+                if (flight !== '无航班号') {
+                    flightCounts[flight] = (flightCounts[flight] || 0) + 1;
+                }
+            });
+            
+            const sortedFlights = Object.entries(flightCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8); // 只显示前8个
+            
+            const ctx = document.getElementById('flight-chart').getContext('2d');
+            
+            if (charts.flight) {
+                charts.flight.destroy();
+            }
+            
+            charts.flight = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sortedFlights.map(([flight]) => flight),
+                    datasets: [{
+                        data: sortedFlights.map(([, count]) => count),
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染价格区间图表
+        function renderPriceChart(data) {
+            const priceRanges = {
+                '0-500': 0,
+                '501-1000': 0,
+                '1001-2000': 0,
+                '2001-3000': 0,
+                '3000+': 0
+            };
+            
+            data.forEach(item => {
+                const price = parseFloat(item.total_price) || 0;
+                if (price <= 500) priceRanges['0-500']++;
+                else if (price <= 1000) priceRanges['501-1000']++;
+                else if (price <= 2000) priceRanges['1001-2000']++;
+                else if (price <= 3000) priceRanges['2001-3000']++;
+                else priceRanges['3000+']++;
+            });
+            
+            const ctx = document.getElementById('price-chart').getContext('2d');
+            
+            if (charts.price) {
+                charts.price.destroy();
+            }
+            
+            charts.price = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(priceRanges),
+                    datasets: [{
+                        label: '行程数量',
+                        data: Object.values(priceRanges),
+                        backgroundColor: '#27ae60'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染数据表格
+        function renderDataTable(data) {
+            const tbody = document.getElementById('data-body');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="loading">没有找到相关记录</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.id.substring(0, 8)}...</td>
+                    <td>${item.service_type || '无'}</td>
+                    <td>${formatDate(item.start_date)} - ${formatDate(item.end_date)}</td>
+                    <td>${item.flight_number || '无'}</td>
+                    <td>
+                        <span class="status-badge ${getGuideTypeClass(item.guide_type)}">
+                            ${getGuideTypeText(item.guide_type)}
+                        </span>
+                    </td>
+                    <td>${item.passengers?.length || 0}</td>
+                    <td>${item.itinerary_days?.length || 0}</td>
+                    <td>${item.total_price || '0'} USD</td>
+                    <td>${formatDateTime(item.created_at)}</td>
+                    <td>
+                        <button class="btn" onclick="viewDetails('${item.id}')">查看详情</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // 查看详情
+        async function viewDetails(id) {
+            try {
+                const itinerary = currentData.find(item => item.id === id);
+                if (!itinerary) {
+                    showStatus('未找到该行程', 'error');
+                    return;
+                }
+                
+                renderDetails(itinerary);
+                openModal('detail-modal');
+                
+            } catch (error) {
+                console.error('查看详情错误:', error);
+                showStatus('查看详情失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 渲染详情
+        function renderDetails(itinerary) {
+            const modalBody = document.getElementById('modal-body');
+            
+            modalBody.innerHTML = `
+                <div class="detail-section">
+                    <h3>基本信息</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">ID：</span>
+                            <span>${itinerary.id}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">服务类型：</span>
+                            <span>${itinerary.service_type || '无'}</span>
+                        </div>
+                      <div class="detail-item">
+                            <span class="detail-label">出行日期：</span>
+                            <span>${formatDate(itinerary.start_date)} - ${formatDate(itinerary.end_date)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">航班号：</span>
+                            <span>${itinerary.flight_number || '无'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">导游类型：</span>
+                            <span>${getGuideTypeText(itinerary.guide_type)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">总价格：</span>
+                            <span>${itinerary.total_price || '0'} USD</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>行程安排 (${itinerary.itinerary_days?.length || 0}天)</h3>
+                    ${itinerary.itinerary_days?.length > 0 ? itinerary.itinerary_days.map(day => `
+                        <div class="detail-item">
+                            <span class="detail-label">第${day.day_number}天 (${day.date})：</span>
+                            <span>${day.plan || '无'} [${day.plan_price || '0'} USD]</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">住宿：</span>
+                            <span>${day.accommodation || '无'} [${day.accommodation_price || '0'} USD]</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">导游服务：</span>
+                            <span>${day.guide_service ? '是' : '否'}</span>
+                        </div>
+                        <hr style="margin: 0.5rem 0; border-color: #eee;">
+                    `).join('') : '<p>无行程安排</p>'}
+                </div>
+                
+                <div class="detail-section">
+                    <h3>乘客信息 (${itinerary.passengers?.length || 0}人)</h3>
+                    ${itinerary.passengers?.length > 0 ? itinerary.passengers.map((passenger, index) => `
+                        <div class="detail-item">
+                            <span class="detail-label">乘客 ${index + 1}：</span>
+                            <span>${passenger.name || '无'} (${passenger.country_code || ''}-${passenger.phone || '无'})</span>
+                        </div>
+                    `).join('') : '<p>无乘客信息</p>'}
+                </div>
+                
+                <div class="detail-section">
+                    <h3>附加服务</h3>
+                    ${itinerary.extra_services?.length > 0 ? itinerary.extra_services.map(service => `
+                        <div class="detail-item">
+                            <span class="detail-label">${service.service_name || '无'}：</span>
+                            <span>${service.price || '0'} USD${service.unit || ''}</span>
+                        </div>
+                    `).join('') : '<p>无附加服务</p>'}
+                </div>
+            `;
+        }
+        
+        // 打开模态框
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+        
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // 获取导游类型文本
+        function getGuideTypeText(guideType) {
+            switch(guideType) {
+                case 'no': return '无需导游';
+                case 'chinese': return '中文导游';
+                case 'english': return '英文导游';
+                default: return guideType || '无';
+            }
+        }
+        
+        // 获取导游类型CSS类
+        function getGuideTypeClass(guideType) {
+            switch(guideType) {
+                case 'no': return 'status-completed';
+                case 'chinese': return 'status-active';
+                case 'english': return 'status-pending';
+                default: return 'status-pending';
+            }
+        }
+        
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '无';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN');
+        }
+        
+        // 格式化日期时间
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return '无';
+            const date = new Date(dateTimeString);
+            return date.toLocaleString('zh-CN');
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            alert(`${type === 'success' ? '成功' : '错误'}: ${message}`);
+        }
+        
+        // 导出统计数据
+        function exportStatistics() {
+            if (currentData.length === 0) {
+                showStatus('没有数据可导出', 'error');
+                return;
+            }
+            
+            try {
+                // 创建CSV内容
+                let csvContent = '格鲁吉亚行程数据统计\n\n';
+                
+                // 基本信息
+                csvContent += '基本信息\n';
+                csvContent += `总行程数,${document.getElementById('total-itineraries').textContent}\n`;
+                csvContent += `总乘客数,${document.getElementById('total-passengers').textContent}\n`;
+                csvContent += `平均天数,${document.getElementById('avg-days').textContent}\n`;
+                csvContent += `平均价格,${document.getElementById('avg-price').textContent} USD\n`;
+                csvContent += `总收入,${document.getElementById('total-revenue').textContent} USD\n`;
+                csvContent += `最受欢迎服务,${document.getElementById('most-popular-service').textContent}\n\n`;
+                
+                // 行程详情
+                csvContent += '行程详情\n';
+                csvContent += 'ID,服务类型,出行日期,航班号,导游类型,乘客数,行程天数,总价格,创建时间\n';
+                
+                currentData.forEach(item => {
+                    csvContent += `${item.id.substring(0, 8)}...,${item.service_type || '无'},`;
+                    csvContent += `${formatDate(item.start_date)} - ${formatDate(item.end_date)},`;
+                    csvContent += `${item.flight_number || '无'},`;
+                    csvContent += `${getGuideTypeText(item.guide_type)},`;
+                    csvContent += `${item.passengers?.length || 0},`;
+                    csvContent += `${item.itinerary_days?.length || 0},`;
+                    csvContent += `${item.total_price || '0'} USD,`;
+                    csvContent += `${formatDateTime(item.created_at)}\n`;
+                });
+                
+                // 创建下载链接
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', '格鲁吉亚行程数据统计.csv');
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showStatus('数据导出成功', 'success');
+                
+            } catch (error) {
+                console.error('导出数据错误:', error);
+                showStatus('导出数据失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认日期范围（最近30天）
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            document.getElementById('date-from').value = thirtyDaysAgo.toISOString().split('T')[0];
+            document.getElementById('date-to').value = today.toISOString().split('T')[0];
+            
+            // 初始化Supabase
+            initSupabase();
+            
+            // 加载统计数据
+            loadStatistics();
+            
+            // 添加筛选条件变化监听
+            document.getElementById('date-from').addEventListener('change', loadStatistics);
+            document.getElementById('date-to').addEventListener('change', loadStatistics);
+            document.getElementById('guide-type').addEventListener('change', loadStatistics);
+            document.getElementById('service-type').addEventListener('change', loadStatistics);
+            
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                const modals = document.querySelectorAll('.detail-modal');
+                modals.forEach(modal => {
+                    if (event.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
