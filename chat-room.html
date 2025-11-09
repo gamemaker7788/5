@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="styles.css">
     <!-- 翻译引擎 -->
     <script src="translator.js"></script>
+    <script src="notification-manager.js"></script>
+
     <!-- 被踢出房间实时监听（内置版） -->
     <script>
 	
@@ -170,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     
     <!-- 设置页面 -->
-    <div class="settings-container" id="settingsContainer">
+    <div class="contacts-container" id="settingsContainer">
         <div class="setting-item" id="changeNameBtn">
             <div><span class="setting-icon">👤</span>修改用户名</div>
             <span class="setting-arrow">›</span>
@@ -181,7 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
     <span class="setting-arrow">›</span>
 </div>
 
-       
+       <div class="setting-item" id="notificationHistoryBtn">
+    <div><span class="setting-icon">🔔</span>通知历史</div>
+    <span class="setting-arrow">›</span>
+</div>
+
         <div class="setting-item" id="aboutBtn">
             <div><span class="setting-icon">ℹ️</span>关于我们</div>
             <span class="setting-arrow">›</span>
@@ -344,6 +350,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="camera-btn" id="switchCameraBtn" title="切换摄像头">🔄</button>
         </div>
     </div>
+	<div class="modal" id="notificationHistoryModal">
+    <div class="modal-content">
+        <div class="modal-title">通知历史</div>
+        <div id="notification-history"></div>
+        <div class="modal-buttons">
+            <button class="modal-btn secondary" onclick="this.closest('.modal').style.display='none'">关闭</button>
+            <button class="modal-btn danger" onclick="window.notificationManager.clearHistory()">清空历史</button>
+        </div>
+    </div>
+</div>
 
     <!-- 引入模块化JS文件 -->
     <script src="config.js"></script>

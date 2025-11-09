@@ -194,7 +194,7 @@ hideEmojiGrid() {
         
         this.setupEventListeners();
         this.initVoicePlayback();
-        
+         await window.notificationManager.init(); // ←新增
         // 添加重试机制
         await this.loadRoomsWithRetry();
         await this.loadContacts();
@@ -1430,53 +1430,74 @@ async filterMessagesByPermission(messages, roomId) {
         return messages; // 出错时返回所有消息
     }
 }
+/* ==================  消息渲染 + 提醒（完整版）  ================== */
 addMessageToChat(msg, username) {
     const c = document.getElementById('messagesContainer');
     if (!c) return;
-    
-    const isOwn = username === this.currentUser.username;
-    const div = document.createElement('div');
-    div.className = `message ${isOwn ? 'own' : 'other'}`;
-    
-    const t = new Date(msg.created_at).toLocaleTimeString('zh-CN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+
+    const isOwn   = username === this.currentUser.username;
+    const isSystem = username === '系统';
+    const div     = document.createElement('div');
+    div.className = isSystem ? 'system-message' : `message ${isOwn ? 'own' : 'other'}`;
+
+    const t = new Date(msg.created_at).toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit'
     });
-    
+
+    /* -------- 各类消息内容构造 -------- */
     let content = '';
     switch (msg.message_type) {
-        case 'image': 
-            content = this.createImageMessageHtml(msg); 
+        case 'image':
+            content = this.createImageMessageHtml(msg);
             break;
-        case 'file':  
-            content = this.createFileMessageHtml(msg);  
+        case 'file':
+            content = this.createFileMessageHtml(msg);
             break;
-        case 'video': 
-            content = this.createVideoMessageHtml(msg); 
+        case 'video':
+            content = this.createVideoMessageHtml(msg);
             break;
         case 'voice':
             content = this.createVoiceMessageHtml(msg);
             break;
-        default:      
+        default:
             content = `<div class="message-text">${this.escapeHtml(msg.content)}</div>`;
     }
-    
-    div.innerHTML = `
-        ${!isOwn ? `<div class="message-avatar" style="background:${this.getRandomColor(username)}">${username[0].toUpperCase()}</div>` : ''}
-        <div class="message-bubble">
-            ${!isOwn ? `<div class="message-sender">${this.escapeHtml(username)}</div>` : ''}
-            ${content}
-            <div class="message-time">${t}</div>
-        </div>
-        ${isOwn ? `<div class="message-avatar" style="background:${this.getRandomColor(username)}">${username[0].toUpperCase()}</div>` : ''}`;
+
+    /* -------- 拼装 DOM -------- */
+    if (isSystem) {
+        div.innerHTML = `<span>${this.escapeHtml(msg.content)}</span>`;
+    } else {
+        div.innerHTML = `
+            ${!isOwn ? `<div class="message-avatar" style="background:${this.getRandomColor(username)}">${username[0].toUpperCase()}</div>` : ''}
+            <div class="message-bubble">
+                ${!isOwn ? `<div class="message-sender">${this.escapeHtml(username)}</div>` : ''}
+                ${content}
+                <div class="message-time">${t}</div>
+            </div>
+            ${isOwn ? `<div class="message-avatar" style="background:${this.getRandomColor(username)}">${username[0].toUpperCase()}</div>` : ''}
+        `;
+    }
+
     c.appendChild(div);
     this.scrollToBottom();
 
-    // 自动翻译文本消息
+    /* -------- 自动翻译（仅文本 & 开启自动翻译时） -------- */
     if (msg.message_type === 'text' && localStorage.getItem('autoTransEnabled') === 'true') {
         setTimeout(() => window.translateMessage(div), 0);
     }
+
+    /* -------- 消息提醒（仅他人消息 & 非系统） -------- */
+    if (!isOwn && !isSystem) {
+        window.notificationManager.onNewMessage({
+            room: this.currentRoom.name,
+            sender: username,
+            body: msg.content,
+            mention: msg.content.includes(`@${this.currentUser.username}`)
+        });
+    }
 }
+
 
 createImageMessageHtml(msg) {
     const url = msg.file_url;
@@ -1724,12 +1745,104 @@ async changeUsername() {
     }
 }
 
+// 修改logout方法（在chat-manager.js文件中）
 logout() {
-    if (confirm('确定要退出登录吗？')) {
+    // 创建自定义弹窗
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 400px;
+            max-width: 90%;
+            text-align: center;
+        ">
+            <div style="
+                font-size: 24px;
+                margin-bottom: 15px;
+                color: #ff9800;
+            ">⚠️</div>
+            <div style="
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                color: #333;
+            ">确定要退出登录吗？</div>
+            <div style="
+                font-size: 14px;
+                color: #666;
+                margin-bottom: 25px;
+            ">退出后需要重新登录才能继续使用聊天室</div>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="cancelLogout" style="
+                    padding: 10px 25px;
+                    border: 1px solid #ddd;
+                    background: white;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.3s;
+                ">取消</button>
+                <button id="confirmLogout" style="
+                    padding: 10px 25px;
+                    border: none;
+                    background: #ff4757;
+                    color: white;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: all 0.3s;
+                ">确定退出</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 绑定事件
+    modal.querySelector('#cancelLogout').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+    
+    modal.querySelector('#confirmLogout').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        // 执行退出登录操作
         localStorage.removeItem('chat_session');
         window.location.href = 'login.html';
-    }
+    });
+    
+    // 点击背景关闭弹窗
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+    
+    // ESC键关闭弹窗
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(modal);
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
 }
+
 
 /* -------------------- 导航控制 -------------------- */
 showChatList() {

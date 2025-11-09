@@ -200,7 +200,7 @@ body {
 	flex-direction: column;
 	width: 300px;
 	border-right: 1px solid #ddd;
-	background-color: #030303;
+	background-color: #f7f7f7;
 }
 
 .setting-item {
@@ -2259,4 +2259,106 @@ input:checked + .slider:before{transform:translateX(14px)}
     display: block;
     margin-bottom: 6px;
     font-weight: 500;
+}
+/* 通知容器 */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 通知卡片 */
+.notification-card {
+    background: #fff;
+    border-left: 5px solid #007acc;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    padding: 12px 16px;
+    width: 300px;
+    animation: fadeIn 0.3s ease;
+    transition: opacity 0.3s ease;
+}
+
+.notification-card.hovering {
+    animation: none;
+}
+
+.notification-card.info { border-left-color: #007acc; }
+.notification-card.success { border-left-color: #07c160; }
+.notification-card.warning { border-left-color: #f39c12; }
+.notification-card.error { border-left-color: #ff4757; }
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #666;
+}
+
+.notification-close:hover {
+    color: #000;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(100%); }
+}
+
+/* 通知历史 */
+#notification-history {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    background: #f9f9f9;
+}
+
+.history-item {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-time {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.history-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.history-message {
+    color: #333;
+}
+
+.empty-history {
+    text-align: center;
+    color: #999;
+    padding: 20px;
 }
