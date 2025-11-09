@@ -7,7 +7,7 @@ class NotificationManager {
   constructor() {
     this.permission = false;          // 浏览器通知权限
     this.audio     = new Audio();     // 提示音
-    this.audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZURE'; // 1kHz 0.1s 提示音
+   this.audio.src = 'Message.mp3'
     this.unreadCount = 0;             // 未读数
     this.lastTitle   = document.title;
   }
