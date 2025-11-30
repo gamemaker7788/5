@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多库云存储 · 无限库组管理</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ===== 基础样式 ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+      line-height: 1.6;
+      padding: 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* ===== 布局组件 ===== */
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .section {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+      min-height: calc(100vh - 100px);
+    }
+
+    .section-header {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 20px;
+      margin-bottom: 2rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-header h2 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #2d3748;
+    }
+
+    /* ===== 按钮样式 ===== */
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e0;
+      transform: translateY(-1px);
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      padding: 0.5rem;
+      cursor: pointer;
+      font-size: 1.2rem;
+      border-radius: 5px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-icon:hover {
+      background: #edf2f7;
+      transform: scale(1.1);
+    }
+
+    .btn-icon.delete:hover {
+      background: #fed7d7;
+      color: #c53030;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: 2px solid #cbd5e0;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      color: #4a5568;
+    }
+
+    .nav-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .nav-btn:hover:not(.active) {
+      border-color: #667eea;
+      color: #667eea;
+    }
+
+    .back-btn {
+      background: #e2e8f0;
+      color: #4a5568;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background: #cbd5e0;
+      transform: translateY(-1px);
+    }
+
+    /* ===== 卡片布局 ===== */
+    .profile-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 20px;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #e2e8f0;
+    }
+
+    .lib-stats {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-label {
+      display: block;
+      color: #718096;
+      font-size: 0.9rem;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    /* ===== 库管理 ===== */
+    .libs-management {
+      display: grid;
+      gap: 2rem;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .libs-section {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 1.5rem;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .libs-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .libs-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    .lib-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 2px solid transparent;
+    }
+
+    .lib-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+      border-color: #667eea;
+    }
+
+    .lib-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex: 1;
+    }
+
+    .lib-icon {
+      font-size: 2rem;
+    }
+
+    .lib-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .lib-stats-small {
+      color: #718096;
+      font-size: 0.9rem;
+    }
+
+    .lib-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* ===== 组网格 ===== */
+    .groups-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      margin-bottom: 2rem;
+    }
+
+    .group-card {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .group-card:hover, .group-card.active {
+      border-color: #667eea;
+      transform: translateY(-1px);
+    }
+
+    .group-card.active {
+      background: #f0f4ff;
+    }
+
+    .group-info {
+      flex: 1;
+    }
+
+    .group-name {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .group-stats {
+      color: #718096;
+      font-size: 0.9rem;
+    }
+
+    .group-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* ===== 文件网格 ===== */
+    .file-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .file-card {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .file-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .file-icon {
+      font-size: 2rem;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f7fafc;
+      border-radius: 8px;
+    }
+
+    .file-info {
+      flex: 1;
+    }
+
+    .file-name {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      word-break: break-all;
+    }
+
+    .file-meta {
+      color: #718096;
+      font-size: 0.8rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* ===== 用户网格 ===== */
+    .user-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    .user-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 1.5rem;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .user-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #e2e8f0;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 600;
+      font-size: 1.2rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .user-stats {
+      color: #718096;
+      font-size: 0.9rem;
+    }
+
+    .user-arrow {
+      color: #cbd5e0;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    /* ===== 表单元素 ===== */
+    .auth-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 1rem 2rem;
+      cursor: pointer;
+      color: #718096;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .auth-tab {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .auth-input, .file-input, .lib-input {
+      width: 100%;
+      padding: 1rem;
+      border: 1px solid #cbd5e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .auth-input:focus, .file-input:focus, .lib-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .readme-textarea {
+      width: 100%;
+      height: 200px;
+      padding: 1rem;
+      border: 1px solid #cbd5e0;
+      border-radius: 10px;
+      font-family: monospace;
+      resize: vertical;
+    }
+
+    /* ===== 上传区域 ===== */
+    .file-actions-bar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .readme-controls {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    /* ===== 弹窗样式 ===== */
+    dialog {
+      border: none;
+      border-radius: 15px;
+      padding: 2rem;
+      max-width: 400px;
+      width: 90vw;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+    }
+
+    .dialog-content {
+      padding: 1rem;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .dialog-actions button {
+      flex: 1;
+    }
+
+    /* ===== 空状态 ===== */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #718096;
+      font-size: 1.1rem;
+      background: white;
+      border-radius: 10px;
+      border: 2px dashed #cbd5e0;
+      margin: 2rem 0;
+    }
+
+    .empty-state p {
+      margin-bottom: 1rem;
+    }
+
+    /* ===== 加载状态 ===== */
+    .loading-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      color: #718096;
+    }
+
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #e2e8f0;
+      border-top: 2px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ===== 错误状态 ===== */
+    .error-state {
+      background: #fed7d7;
+      color: #c53030;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    .error-state p {
+      margin-bottom: 0.5rem;
+    }
+
+    /* ===== 他的文件区域样式 ===== */
+    .his-files-container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      margin-top: 1rem;
+    }
+
+    .group-section {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border: 2px solid #f7fafc;
+      transition: all 0.3s ease;
+    }
+
+    .group-section:hover {
+      border-color: #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .group-section h4 {
+      font-size: 1.2rem;
+      color: #2d3748;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .files-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    .file-item {
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.3s ease;
+      border: 1px solid #e2e8f0;
+    }
+
+    .file-item:hover {
+      background: #edf2f7;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ===== 库内容视图样式 ===== */
+    .lib-content {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .lib-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .lib-header h3 {
+      font-size: 1.5rem;
+      color: #2d3748;
+      margin: 0;
+    }
+
+    .group-content {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e2e8f0;
+    }
+
+    .group-content h4 {
+      font-size: 1.3rem;
+      color: #2d3748;
+      margin-bottom: 1rem;
+    }
+
+    /* ===== 响应式设计 ===== */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+      }
+      
+      .section {
+        padding: 0 1rem;
+        margin: 1rem auto;
+      }
+      
+      .libs-management {
+        grid-template-columns: 1fr;
+      }
+      
+      .profile-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .lib-stats {
+        justify-content: center;
+      }
+      
+      .libs-grid, .groups-grid, .user-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .file-actions-bar {
+        flex-direction: column;
+      }
+      
+      .nav {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      
+      .lib-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 预览弹窗 -->
+  <dialog id="previewDlg">
+    <div class="dialog-content">
+      <button onclick="this.parentElement.parentElement.close()" class="btn-icon">✕</button>
+      <h3 id="previewTitle"></h3>
+      <div id="previewBox"></div>
+    </div>
+  </dialog>
+
+  <!-- 新建库弹窗 -->
+  <dialog id="newLibDlg">
+    <div class="dialog-content">
+      <button onclick="this.parentElement.parentElement.close()" class="btn-icon">✕</button>
+      <h3>新建库</h3>
+      <input type="text" id="newLibName" placeholder="库名称" maxlength="20" class="lib-input">
+      <select id="newLibType" class="lib-input">
+        <option value="pub">公开库</option>
+        <option value="pri">私有库</option>
+      </select>
+      <div class="dialog-actions">
+        <button onclick="createNewLib()" class="btn-primary">创建</button>
+        <button onclick="document.getElementById('newLibDlg').close()" class="btn-secondary">取消</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 新建组弹窗 -->
+  <dialog id="newGroupDlg">
+    <div class="dialog-content">
+      <button onclick="this.parentElement.parentElement.close()" class="btn-icon">✕</button>
+      <h3>新建组</h3>
+      <input type="text" id="newGroupName" placeholder="组名称" maxlength="20" class="lib-input">
+      <div class="dialog-actions">
+        <button onclick="createNewGroup()" class="btn-primary">创建</button>
+        <button onclick="document.getElementById('newGroupDlg').close()" class="btn-secondary">取消</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 重命名弹窗 -->
+  <dialog id="renameDlg">
+    <div class="dialog-content">
+      <button onclick="this.parentElement.parentElement.close()" class="btn-icon">✕</button>
+      <h3 id="renameTitle">重命名</h3>
+      <input type="text" id="renameInput" placeholder="新名称" maxlength="20" class="lib-input">
+      <div class="dialog-actions">
+        <button onclick="confirmRename()" class="btn-primary">确认</button>
+        <button onclick="document.getElementById('renameDlg').close()" class="btn-secondary">取消</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 调试信息 -->
+  <div id="debugInfo" style="background: #f0f0f0; padding: 10px; margin: 10px; border-radius: 5px; display: none;">
+    <h4>调试信息</h4>
+    <div id="debugContent"></div>
+  </div>
+
+  <!-- 顶部导航 -->
+  <header class="header">
+    <h1>📚 多库云存储</h1>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="showSection('pubBox')">🌐 公共空间</button>
+      <button class="nav-btn" onclick="current.serial ? showSection('myBox') : showSection('authBox')">👤 我的空间</button>
+      <button class="nav-btn" onclick="testConnection()" style="background: #10b981;">🔧 测试连接</button>
+      <button class="nav-btn" onclick="logout()" style="background: #ef4444; display: none;" id="logoutBtn">🚪 退出</button>
+    </nav>
+  </header>
+
+  <!-- 公共空间 -->
+  <section id="pubBox" class="section active">
+    <div class="section-header">
+      <h2>🌐 公共空间</h2>
+      <p>发现其他用户的公开库</p>
+    </div>
+    <div id="userList" class="user-grid"></div>
+  </section>
+
+  <!-- 他人库列表 -->
+  <section id="hisBox" class="section hidden">
+    <div class="section-header">
+      <button class="back-btn" onclick="backToPub()">← 返回公共空间</button>
+      <h2 id="hisName"></h2>
+      <p>的公开库</p>
+    </div>
+    <div id="hisLibs" class="libs-grid"></div>
+  </section>
+
+  <!-- 他人库详情 -->
+  <section id="hisLibDetail" class="section hidden">
+    <div class="section-header">
+      <button class="back-btn" onclick="backToHisLibs()">← 返回库列表</button>
+      <h2 id="hisLibTitle"></h2>
+    </div>
+    <div id="hisFiles" class="his-files-container"></div>
+  </section>
+
+  <!-- 我的空间 -->
+  <section id="myBox" class="section hidden">
+    <div class="section-header">
+      <h2>👤 我的空间</h2>
+      <p>序列号: <span id="showSerial"></span></p>
+    </div>
+    
+    <!-- 个人信息 -->
+    <div class="profile-card">
+      <div class="avatar-section">
+        
+        <div>
+          <input type="file" id="avatarFile" accept="image/*" class="file-input">
+          <button onclick="uploadAvatar()" class="btn-secondary">更新头像</button>
+        </div>
+      </div>
+      
+      <div class="lib-stats">
+        <div class="stat-item">
+          <span class="stat-label">公开库</span>
+          <span class="stat-value" id="pubCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">私有库</span>
+          <span class="stat-value" id="priCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">总文件</span>
+          <span class="stat-value" id="totalFiles">0</span>
+        </div>
+        <div class="libs-header">
+        <h3>📚 我的库管理</h3>
+        <button onclick="showNewLibDialog()" class="btn-primary">+ 新建库</button>
+      </div>
+      </div>
+    </div>
+
+    <!-- 库管理 -->
+    <div class="libs-management">
+      
+      
+      <!-- 公开库区域 -->
+      <div class="libs-section">
+        <h4>🌐 公开库</h4>
+        <div id="pubLibs" class="libs-grid"></div>
+      </div>
+      
+      <!-- 私有库区域 -->
+      <div class="libs-section">
+        <h4>🔒 私有库</h4>
+        <div id="priLibs" class="libs-grid"></div>
+      </div>
+    </div>
+
+    <!-- 当前库内容 -->
+    <div id="currentLibView" class="section hidden">
+      <div class="lib-content">
+        <div class="lib-header">
+          <button class="back-btn" onclick="backToMyLibs()">← 返回库列表</button>
+          <h3 id="currentLibTitle"></h3>
+          <button onclick="showNewGroupDialog()" class="btn-primary">+ 新建组</button>
+        </div>
+        
+        <!-- 组列表 -->
+        <div id="groupsList" class="groups-grid"></div>
+        
+        <!-- 当前组文件 -->
+        <div id="currentGroupView" class="group-content">
+          <h4 id="currentGroupTitle"></h4>
+          <div class="file-actions-bar">
+            <input type="file" id="fileInput" multiple class="file-input">
+            <button onclick="uploadFiles()" class="btn-primary">上传文件</button>
+          </div>
+          <div id="currentGroupFiles" class="file-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- README编辑 -->
+    <div class="readme-section">
+      <h3>📝 个人说明</h3>
+      <textarea id="readme" placeholder="写点个人说明..." class="readme-textarea"></textarea>
+      <div class="readme-controls">
+        <button onclick="saveReadme()" class="btn-primary">保存</button>
+        <button onclick="loadReadme()" class="btn-secondary">加载</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 登录/注册 -->
+  <section id="authBox" class="section hidden">
+    <div class="auth-card">
+      <h2>🔑 登录 / 注册</h2>
+      
+      <div class="auth-tabs">
+        <button class="tab-btn active" onclick="showAuthTab('register')">注册</button>
+        <button class="tab-btn" onclick="showAuthTab('login')">登录</button>
+      </div>
+
+      <div id="registerTab" class="auth-tab active">
+        <input id="regUser" placeholder="用户名" class="auth-input">
+        <input id="regPwd" placeholder="密码" type="password" class="auth-input">
+        <button onclick="register()" class="btn-primary">一键注册</button>
+      </div>
+
+      <div id="loginTab" class="auth-tab hidden">
+        <input id="loginUser" placeholder="用户名" class="auth-input">
+        <input id="loginPwd" placeholder="密码" type="password" class="auth-input">
+        <button onclick="login()" class="btn-primary">登录</button>
+      </div>
+    </div>
+  </section>
+
+   <script src="main.js"></script>
+</body>
+</html>
