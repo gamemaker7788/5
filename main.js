@@ -1,3 +1,53 @@
+/* ===== 仅用于替换 confirm 的内置弹窗 ===== */
+function toast(msg, type = 'info') {
+  removeToast();
+  const bg = { info: '#1cb0f6', success: '#58cc02', warning: '#ff9600', error: '#ff4b4b' }[type] || '#666';
+  const div = document.createElement('div');
+  div.id = 'toastWrap';
+  div.innerHTML = `<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:${bg};color:#fff;padding:14px 24px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.2);z-index:9999;font-size:15px;animation:slideDown .3s ease">${msg}</div>`;
+  document.body.appendChild(div);
+  setTimeout(removeToast, 2500);
+}
+function removeToast() {
+  const t = document.getElementById('toastWrap');
+  if (t) t.remove();
+}
+
+function confirmDlg(msg) {
+  return new Promise(resolve => {
+    removeConfirm();
+    const div = document.createElement('div');
+    div.id = 'confirmWrap';
+    div.innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9998;animation:fadeIn .25s ease">
+        <div style="background:#fff;border-radius:16px;padding:28px 32px;max-width:360px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,.25);animation:popIn .25s ease">
+          <div style="font-size:17px;color:#333;margin-bottom:22px;line-height:1.5">${msg}</div>
+          <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn-secondary small" id="cancelBtn">取消</button>
+            <button class="btn-primary small" id="okBtn">确定</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(div);
+    div.querySelector('#cancelBtn').onclick = () => { resolve(false); removeConfirm(); };
+    div.querySelector('#okBtn').onclick   = () => { resolve(true);  removeConfirm(); };
+  });
+}
+function removeConfirm() {
+  const c = document.getElementById('confirmWrap');
+  if (c) c.remove();
+}
+
+/* ===== 仅用于动画的极简样式 ===== */
+const animStyle = document.createElement('style');
+animStyle.textContent = `
+@keyframes slideDown{from{transform:translate(-50%,-30px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+`;
+document.head.appendChild(animStyle);
+/* ===== 确认弹窗插入结束 ===== */
+
 /* ===== 配置 ===== */
 const SUPABASE_URL = 'https://jbcrkuwnlmdmwwmiimhr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiY3JrdXdubG1kbXd3bWlpbWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODcyNjUsImV4cCI6MjA4MDA2MzI2NX0.mK7o1xaVrV39J6_wahE_1iv_cacYUVrZJurKs_s2Wf0'
@@ -84,11 +134,11 @@ async function register() {
   const pwd = document.getElementById('regPwd').value.trim()
   
   if (!username || !pwd) {
-    alert('用户名和密码不能为空')
+    toast('用户名和密码不能为空')
     return
   }
   if (pwd.length < 6) {
-    alert('密码至少6位')
+    toast('密码至少6位')
     return
   }
   
@@ -102,7 +152,7 @@ async function register() {
       .limit(1)
     
     if (testError && testError.message.includes('profiles')) {
-      alert('数据库表不存在！请先执行SQL代码创建表结构。')
+      toast('数据库表不存在！请先执行SQL代码创建表结构。')
       return
     }
     
@@ -115,16 +165,16 @@ async function register() {
     
     if (error) {
       if (error.message.includes('profiles')) {
-        alert('数据库表不存在！请先执行SQL代码创建表结构。')
+        toast('数据库表不存在！请先执行SQL代码创建表结构。')
       } else if (error.message.includes('duplicate key')) {
-        alert('用户名已存在')
+        toast('用户名已存在')
       } else {
         throw error
       }
       return
     }
     
-    alert('注册成功！序列号：' + serial)
+    toast('注册成功！序列号：' + serial)
     
     // 注册成功后自动登录
     document.getElementById('loginUser').value = username
@@ -132,94 +182,58 @@ async function register() {
     await login()
     
   } catch (error) {
-    alert('注册失败：' + error.message)
+    toast('注册失败：' + error.message)
   }
 }
 
 async function login() {
-  const username = document.getElementById('loginUser').value.trim()
-  const pwd = document.getElementById('loginPwd').value.trim()
-  
-  if (!username || !pwd) {
-    alert('用户名和密码不能为空')
-    return
-  }
-  
+  const username = document.getElementById('loginUser').value.trim();
+  const pwd      = document.getElementById('loginPwd').value.trim();
+  if (!username || !pwd) { toast('用户名和密码不能为空'); return; }
+
   try {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .single()
-    
-    if (error) {
-      if (error.message && error.message.includes('No rows found')) {
-        alert('用户不存在')
-      } else {
-        alert('登录失败：' + (error.message || '未知错误'))
-      }
-      return
+                                .from('profiles')
+                                .select('*')
+                                .eq('username', username)
+                                .single();
+    if (error || !data) { toast('用户不存在'); return; }
+    if (data.pwd !== pwd) { toast('密码错误'); return; }
+
+    current = data;
+    /* ----- 处理 libs 字段 ----- */
+    if (!current.libs) current.libs = [];
+    else if (typeof current.libs === 'string') {
+      try { current.libs = JSON.parse(current.libs); }
+      catch { current.libs = []; }
     }
-    
-    if (!data) {
-      alert('用户不存在')
-      return
-    }
-    
-    if (data.pwd !== pwd) {
-      alert('密码错误')
-      return
-    }
-    
-    console.log('登录成功:', data.username)
-    
-    // 设置当前用户
-    current = data
-    // 处理libs字段
-    if (!current.libs) {
-      current.libs = []
-    } else if (typeof current.libs === 'string') {
-      try {
-        current.libs = JSON.parse(current.libs)
-      } catch {
-        current.libs = []
-      }
-    }
-    
-    // 更新界面显示
-    document.getElementById('showSerial').innerText = current.serial || ''
-    
-    // 加载头像
-    await loadUserAvatar()
-    
-    // 保存登录状态到本地存储
-    localStorage.setItem('currentUser', JSON.stringify(current))
-    
-    // 立即切换到我的空间页面
-    showSection('myBox')
-    
-    // 加载数据
-    await loadReadme()
-    await loadMyLibs()
-    
-    console.log('登录流程完成，已切换到我的空间')
-    
-  } catch (error) {
-    alert('登录失败：' + (error.message || '未知错误'))
+
+    /* ----- 更新界面 ----- */
+    document.getElementById('showSerial').innerText = current.serial || '';
+    await loadUserAvatar();                 // 头像
+    localStorage.setItem('currentUser', JSON.stringify(current));
+
+    /* ✅ 显示登出按钮 */
+    document.getElementById('logoutBtn').style.display = 'inline-flex';
+
+    showSection('myBox');                   // 进入“我的空间”
+    await loadReadme();
+    await loadMyLibs();
+    await migrateExistingFiles();
+  } catch (e) {
+    toast('登录失败：' + (e.message || '未知错误'));
   }
 }
 
-
 function logout() {
-  if (confirm('确定要退出登录吗？')) {
-    current = {}
-    localStorage.removeItem('currentUser')
-    showSection('pubBox')
-    // 清空登录表单
-    document.getElementById('loginUser').value = ''
-    document.getElementById('loginPwd').value = ''
-    console.log('已退出登录')
-  }
+  if (!confirm('确定要退出登录吗？')) return;
+  current = {};
+  localStorage.removeItem('currentUser');
+  document.getElementById('logoutBtn').style.display = 'none'; // ✅ 隐藏
+  showSection('pubBox');
+  /* 清空登录表单（可选） */
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPwd').value = '';
 }
 
 /* ===== 头像管理 ===== */
@@ -228,20 +242,20 @@ async function uploadAvatar() {
   const file = fileInput.files[0]
   
   if (!file) {
-    alert('请选择头像文件')
+    toast('请选择头像文件')
     return
   }
   
   // 检查文件类型
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    alert('请选择图片文件（JPG、PNG、GIF、WebP）')
+    toast('请选择图片文件（JPG、PNG、GIF、WebP）')
     return
   }
   
   // 检查文件大小（限制为5MB）
   if (file.size > 5 * 1024 * 1024) {
-    alert('头像文件大小不能超过5MB')
+    toast('头像文件大小不能超过5MB')
     return
   }
   
@@ -250,7 +264,7 @@ async function uploadAvatar() {
         
         // 确保当前用户已登录
         if (!current || !current.serial) {
-            alert('请先登录')
+            toast('请先登录')
             return
         }
         
@@ -300,11 +314,11 @@ async function uploadAvatar() {
         // 清空文件输入
         fileInput.value = ''
         
-        alert('头像更新成功！')
+        toast('头像更新成功！')
         
     } catch (error) {
         console.error('头像上传失败:', error)
-        alert('头像上传失败：' + error.message)
+        toast('头像上传失败：' + error.message)
     }
 }
 // 定义获取正确头像URL的函数
@@ -624,7 +638,7 @@ async function createNewLib() {
   const type = document.getElementById('newLibType').value
   
   if (!name) {
-    alert('请输入库名称')
+    toast('请输入库名称')
     return
   }
   
@@ -643,7 +657,7 @@ async function createNewLib() {
     
     // 检查是否已存在同名库
     if (current.libs.some(lib => lib.name === name)) {
-      alert('库名称已存在')
+      toast('库名称已存在')
       return
     }
     
@@ -652,13 +666,13 @@ async function createNewLib() {
     await saveUserData()
     
     document.getElementById('newLibDlg').close()
-    alert('库创建成功！')
+    toast('库创建成功！')
     
     // 重新加载库列表
     await loadMyLibs()
     
   } catch (error) {
-    alert('创建库失败：' + error.message)
+    toast('创建库失败：' + error.message)
   }
 }
 
@@ -683,10 +697,10 @@ async function deleteLib(libId) {
     await saveUserData()
     
     loadMyLibs()
-    alert('库已删除')
+    toast('库已删除')
     
   } catch (error) {
-    alert('删除库失败：' + error.message)
+    toast('删除库失败：' + error.message)
   }
 }
 
@@ -699,7 +713,7 @@ async function loadLibContent(libId) {
   
   const lib = current.libs.find(l => l.id === libId)
   if (!lib) {
-    alert('库不存在')
+    toast('库不存在')
     return
   }
   
@@ -904,7 +918,7 @@ async function loadGroupFilesModal(libId, groupId) {
   const group = lib?.groups.find(g => g.id === groupId)
   
   if (!lib || !group) {
-    alert('组不存在')
+    toast('组不存在')
     return
   }
   
@@ -965,32 +979,44 @@ async function loadFilesModalContent(libId, groupId) {
       </div>
     `
     
-    const path = `u/${current.serial}/${libId}/${groupId}/`
-    const { data: files, error } = await supabase.storage.from('public').list(path)
+    // 从数据库加载文件元数据
+    const lib = current.libs.find(l => l.id === libId)
+    const group = lib?.groups.find(g => g.id === groupId)
     
-    if (error) {
-      console.error('加载文件列表失败:', error)
+    if (!group || !Array.isArray(group.files)) {
       renderFilesModalGrid([], libId, groupId)
       return
     }
     
-    const fileList = files?.filter(f => !f.name.endsWith('/')).map(f => ({
-      name: f.name,
-      size: f.metadata?.size,
-      updated: f.metadata?.lastModified
-    })) || []
+    // 验证文件是否实际存在
+    const validatedFiles = []
     
-    console.log('获取到的文件:', fileList)
-    
-    // 更新组中的文件列表
-    const lib = current.libs.find(l => l.id === libId)
-    const group = lib?.groups.find(g => g.id === groupId)
-    if (group) {
-      group.files = fileList
-      await saveUserData()
+    for (const fileMeta of group.files) {
+      const path = `u/${current.serial}/${libId}/${groupId}/${fileMeta.storageName}`
+      const { data } = supabase.storage.from('public').getPublicUrl(path)
+      
+      try {
+        // 检查文件是否存在
+        const response = await fetch(data.publicUrl, { method: 'HEAD' })
+        if (response.ok) {
+          validatedFiles.push(fileMeta)
+        } else {
+          console.warn(`文件不存在: ${fileMeta.storageName}`)
+          // 从元数据中移除不存在的文件
+          group.files = group.files.filter(f => f.storageName !== fileMeta.storageName)
+        }
+      } catch (error) {
+        console.warn(`文件检查失败: ${fileMeta.storageName}`, error)
+        // 保留文件记录，但标记为需要验证
+        validatedFiles.push({ ...fileMeta, needsVerification: true })
+      }
     }
     
-    renderFilesModalGrid(fileList, libId, groupId)
+    // 保存更新后的元数据
+    await saveUserData()
+    
+    console.log('验证后的文件列表:', validatedFiles)
+    renderFilesModalGrid(validatedFiles, libId, groupId)
     
   } catch (error) {
     console.error('加载文件错误:', error)
@@ -1013,34 +1039,273 @@ function renderFilesModalGrid(files, libId, groupId) {
   
   container.innerHTML = files.map(file => `
     <div class="file-card-modal">
-      <div class="file-icon-modal">${getFileIcon(file.name)}</div>
+      <div class="file-icon-modal">${getFileIcon(file.originalName)}</div>
       <div class="file-info-modal">
-        <div class="file-name-modal">${file.name}</div>
+        <div class="file-name-modal" title="${file.originalName}">
+          ${file.originalName}
+          ${file.needsVerification ? ' <span style="color: orange;" title="文件需要验证">⚠️</span>' : ''}
+        </div>
         <div class="file-meta-modal">
           <span>${formatFileSize(file.size)}</span>
-          <span>${file.updated ? new Date(file.updated).toLocaleDateString() : ''}</span>
+          <span>${file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : ''}</span>
+          <span>下载: ${file.downloadCount || 0} 次</span>
+        </div>
+        <div class="file-storage-name" style="font-size: 0.7rem; color: #888; margin-top: 0.25rem;">
+          存储名: ${file.storageName}
         </div>
       </div>
       <div class="file-actions-modal">
-        <button class="btn-icon" onclick="previewFile('${libId}', '${groupId}', '${file.name}')" title="预览">👁️</button>
-        <button class="btn-icon" onclick="downloadFile('${libId}', '${groupId}', '${file.name}')" title="下载">📥</button>
-        <button class="btn-icon" onclick="copyFileLink('${libId}', '${groupId}', '${file.name}')" title="复制链接">🔗</button>
-        <button class="btn-icon delete" onclick="deleteFile('${libId}', '${groupId}', '${file.name}')" title="删除">🗑️</button>
+        <button class="btn-icon" onclick="previewFile('${libId}', '${groupId}', '${file.storageName}', '${file.originalName}')" title="预览">👁👁️</button>
+        <button class="btn-icon" onclick="downloadFile('${libId}', '${groupId}', '${file.storageName}', '${file.originalName}')" title="下载">📥📥</button>
+        <button class="btn-icon" onclick="copyFileLink('${libId}', '${groupId}', '${file.storageName}', '${file.originalName}')" title="复制链接">🔗🔗</button>
+        <button class="btn-icon delete" onclick="deleteFile('${libId}', '${groupId}', '${file.storageName}')" title="删除">🗑🗑️</button>
       </div>
     </div>
   `).join('')
 }
+async function downloadFile(libId, groupId, storageFileName, originalFileName) {
+  const path = `u/${current.serial}/${libId}/${groupId}/${storageFileName}`
+  const { data } = supabase.storage.from('public').getPublicUrl(path)
+  
+  try {
+    const response = await fetch(data.publicUrl)
+    if (!response.ok) {
+      throw new Error(`文件下载失败: ${response.status} ${response.statusText}`)
+    }
+    
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    
+    const a = document.createElement('a')
+    a.href = url
+    a.download = originalFileName || storageFileName // 使用原始文件名作为下载文件名
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    // 更新下载计数
+    await updateDownloadCount(libId, groupId, storageFileName)
+    
+    toast(`文件 "${originalFileName}" 下载开始`)
+    
+  } catch (error) {
+    toast('下载失败：' + error.message)
+  }
+}
+async function updateDownloadCount(libId, groupId, storageFileName) {
+  try {
+    const lib = current.libs.find(l => l.id === libId)
+    const group = lib?.groups.find(g => g.id === groupId)
+    const file = group?.files.find(f => f.storageName === storageFileName)
+    
+    if (file) {
+      file.downloadCount = (file.downloadCount || 0) + 1
+      file.lastDownloaded = new Date().toISOString()
+      await saveUserData()
+    }
+  } catch (error) {
+    console.error('更新下载计数失败:', error)
+  }
+}
+async function previewFile(libId, groupId, storageFileName, originalFileName) {
+  const path = `u/${current.serial}/${libId}/${groupId}/${storageFileName}`
+  const ext = originalFileName.split('.').pop().toLowerCase()
+  const { data } = supabase.storage.from('public').getPublicUrl(path)
+  
+  // 创建预览弹窗
+  const previewHtml = `
+    <div id="previewModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>${originalFileName}</h3>
+          <button class="close-btn" onclick="closePreview()">✕✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="previewContent">
+            <div class="file-preview-info">
+              <p><strong>原始文件名:</strong> ${originalFileName}</p>
+              <p><strong>存储文件名:</strong> ${storageFileName}</p>
+              <p><strong>文件类型:</strong> ${ext}</p>
+              <p><strong>大小:</strong> ${await getFileSize(path)}</p>
+            </div>
+            ${['jpg','jpeg','png','gif','webp'].includes(ext) ? 
+              `<div class="image-preview">
+                
+               </div>` :
+              `<div class="text-preview">
+                <p>不支持在线预览，请下载查看</p>
+               </div>`
+            }
+          </div>
+          <div class="modal-actions">
+            <button onclick="downloadFile('${libId}', '${groupId}', '${storageFileName}', '${originalFileName}')" class="btn-primary">下载文件</button>
+            <button onclick="copyFileLink('${libId}', '${groupId}', '${storageFileName}', '${originalFileName}')" class="btn-secondary">复制链接</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+  
+  document.body.insertAdjacentHTML('beforeend', previewHtml)
+}
+async function copyFileLink(libId, groupId, storageFileName, originalFileName) {
+  const path = `u/${current.serial}/${libId}/${groupId}/${storageFileName}`
+  const { data } = supabase.storage.from('public').getPublicUrl(path)
+  
+  const linkInfo = `文件名: ${originalFileName}\n下载链接: ${data.publicUrl}`
+  
+  try {
+    await navigator.clipboard.writeText(linkInfo)
+    toast('文件信息已复制到剪贴板\n包含文件名和下载链接')
+  } catch (error) {
+    // 降级方案
+    const textArea = document.createElement('textarea')
+    textArea.value = linkInfo
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    toast('文件信息已复制到剪贴板')
+  }
+}
+async function deleteFile(libId, groupId, storageFileName) {
+  if (!confirm(`确定删除这个文件？此操作不可撤销！`)) return
+  
+  try {
+    const path = `u/${current.serial}/${libId}/${groupId}/${storageFileName}`
+    const { error } = await supabase.storage.from('public').remove([path])
+    
+    if (error) {
+      toast('删除失败: ' + error.message)
+      return
+    }
+    
+    // 从元数据中移除文件记录
+    const lib = current.libs.find(l => l.id === libId)
+    const group = lib?.groups.find(g => g.id === groupId)
+    if (group && group.files) {
+      group.files = group.files.filter(f => f.storageName !== storageFileName)
+      await saveUserData()
+    }
+    
+    toast('文件删除成功')
+    
+    // 刷新文件列表
+    if (document.getElementById('filesModalContent')) {
+      await loadFilesModalContent(libId, groupId)
+    }
+    
+  } catch (error) {
+    toast('删除失败：' + error.message)
+  }
+}
+async function downloadHisFile(libId, groupId, storageFileName) {
+  // 首先需要获取原始文件名
+  const userData = await getUserData(currentHis)
+  const libs = typeof userData.libs === 'string' ? JSON.parse(userData.libs) : userData.libs
+  const lib = libs.find(l => l.id === libId)
+  const group = lib?.groups.find(g => g.id === groupId)
+  const file = group?.files.find(f => f.storageName === storageFileName)
+  
+  const originalFileName = file?.originalName || storageFileName
+  const path = `u/${currentHis}/${libId}/${groupId}/${storageFileName}`
+  const { data } = supabase.storage.from('public').getPublicUrl(path)
+  
+  try {
+    const response = await fetch(data.publicUrl)
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    
+    const a = document.createElement('a')
+    a.href = url
+    a.download = originalFileName // 使用原始文件名
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast(`文件 "${originalFileName}" 下载开始`)
+  } catch (error) {
+    toast('下载失败：' + error.message)
+  }
+}
 
+async function copyHisFileLink(libId, groupId, storageFileName) {
+  // 获取原始文件名
+  const userData = await getUserData(currentHis)
+  const libs = typeof userData.libs === 'string' ? JSON.parse(userData.libs) : userData.libs
+  const lib = libs.find(l => l.id === libId)
+  const group = lib?.groups.find(g => g.id === groupId)
+  const file = group?.files.find(f => f.storageName === storageFileName)
+  
+  const originalFileName = file?.originalName || storageFileName
+  const path = `u/${currentHis}/${libId}/${groupId}/${storageFileName}`
+  const { data } = supabase.storage.from('public').getPublicUrl(path)
+  
+  const linkInfo = `文件名: ${originalFileName}\n下载链接: ${data.publicUrl}`
+  
+  try {
+    await navigator.clipboard.writeText(linkInfo)
+    toast('文件信息已复制到剪贴板')
+  } catch (error) {
+    const textArea = document.createElement('textarea')
+    textArea.value = linkInfo
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    toast('文件信息已复制到剪贴板')
+  }
+}
+
+/* ===== 辅助函数 ===== */
+async function getUserData(serial) {
+  const { data, error } = await supabase.from('profiles')
+    .select('*')
+    .eq('serial', serial)
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+/* ===== 初始化时迁移现有文件数据 ===== */
+async function migrateExistingFiles() {
+  if (!current.libs || !Array.isArray(current.libs)) return
+  
+  let needsMigration = false
+  
+  for (const lib of current.libs) {
+    for (const group of lib.groups || []) {
+      if (group.files && Array.isArray(group.files)) {
+        for (const file of group.files) {
+          // 如果文件记录没有storageName字段，需要迁移
+          if (!file.storageName) {
+            file.storageName = file.name || `legacy_${Date.now()}`
+            file.originalName = file.name || '未知文件'
+            needsMigration = true
+          }
+        }
+      }
+    }
+  }
+  
+  if (needsMigration) {
+    await saveUserData()
+    console.log('文件数据迁移完成')
+  }
+}
 async function uploadToSelectedGroup() {
   const selectedGroupId = document.getElementById('selectedGroup').value
   if (!selectedGroupId) {
-    alert('请先选择组')
+    toast('请先选择组')
     return
   }
   
   const files = document.getElementById('modalFileInput').files
   if (files.length === 0) {
-    alert('请选择文件')
+    toast('请选择文件')
     return
   }
   
@@ -1049,13 +1314,13 @@ async function uploadToSelectedGroup() {
 
 async function uploadToCurrentGroup() {
   if (!currentGroup) {
-    alert('请先选择组')
+    toast('请先选择组')
     return
   }
   
   const files = document.getElementById('filesModalInput').files
   if (files.length === 0) {
-    alert('请选择文件')
+    toast('请选择文件')
     return
   }
   
@@ -1070,7 +1335,11 @@ async function uploadFilesToGroup(libId, groupId, files) {
   
   for (const file of files) {
     try {
-      const filePath = `u/${current.serial}/${libId}/${groupId}/${file.name}`
+      // 生成唯一文件名（使用时间戳+随机数）
+      const fileExt = file.name.split('.').pop()
+      const uniqueFileName = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`
+      
+      const filePath = `u/${current.serial}/${libId}/${groupId}/${uniqueFileName}`
       
       const { error } = await supabase.storage
         .from('public')
@@ -1079,20 +1348,22 @@ async function uploadFilesToGroup(libId, groupId, files) {
       if (error) {
         console.error('上传错误:', error)
         errorCount++
-        alert(`文件 ${file.name} 上传失败: ${error.message}`)
+        toast(`文件 ${file.name} 上传失败: ${error.message}`)
       } else {
+        // 成功上传后，更新文件元数据
+        await updateFileMetadata(libId, groupId, uniqueFileName, file.name, file.size)
         successCount++
       }
       
     } catch (error) {
       console.error('上传异常:', error)
       errorCount++
-      alert(`文件 ${file.name} 上传异常: ${error.message}`)
+      toast(`文件 ${file.name} 上传异常: ${error.message}`)
     }
   }
   
   if (successCount > 0) {
-    alert(`成功上传 ${successCount} 个文件${errorCount > 0 ? `，${errorCount} 个文件失败` : ''}`)
+    toast(`成功上传 ${successCount} 个文件${errorCount > 0 ? `，${errorCount} 个文件失败` : ''}`)
     
     // 刷新文件列表
     if (document.getElementById('filesModalContent')) {
@@ -1115,6 +1386,53 @@ async function uploadFilesToGroup(libId, groupId, files) {
   document.getElementById('filesModalInput').value = ''
 }
 
+async function updateFileMetadata(libId, groupId, storageFileName, originalFileName, fileSize) {
+  try {
+    const lib = current.libs.find(l => l.id === libId)
+    if (!lib) return
+    
+    let group = lib.groups.find(g => g.id === groupId)
+    if (!group) {
+      // 如果组不存在，创建新组
+      group = {
+        id: groupId,
+        name: groupId, // 使用ID作为默认名称
+        files: [],
+        created_at: new Date().toISOString()
+      }
+      lib.groups.push(group)
+    }
+    
+    if (!Array.isArray(group.files)) {
+      group.files = []
+    }
+    
+    // 检查是否已存在相同存储文件名的记录
+    const existingFileIndex = group.files.findIndex(f => f.storageName === storageFileName)
+    
+    const fileMetadata = {
+      storageName: storageFileName, // 存储中的唯一文件名
+      originalName: originalFileName, // 原始文件名
+      size: fileSize,
+      uploadedAt: new Date().toISOString(),
+      downloadCount: 0
+    }
+    
+    if (existingFileIndex !== -1) {
+      // 更新现有文件记录
+      group.files[existingFileIndex] = fileMetadata
+    } else {
+      // 添加新文件记录
+      group.files.push(fileMetadata)
+    }
+    
+    await saveUserData()
+    console.log('文件元数据更新成功:', fileMetadata)
+    
+  } catch (error) {
+    console.error('更新文件元数据失败:', error)
+  }
+}
 function getGroupTotalSize(group) {
   if (!group.files || !Array.isArray(group.files)) return 0
   return group.files.reduce((total, file) => total + (file.size || 0), 0)
@@ -1123,7 +1441,7 @@ function getGroupTotalSize(group) {
 /* ===== 组管理 ===== */
 function showNewGroupDialog() {
   if (!currentLib) {
-    alert('请先选择库')
+    toast('请先选择库')
     return
   }
   
@@ -1135,12 +1453,12 @@ async function createNewGroup() {
   const name = document.getElementById('newGroupName').value.trim()
   
   if (!name) {
-    alert('请输入组名称')
+    toast('请输入组名称')
     return
   }
   
   if (!currentLib) {
-    alert('请先选择库')
+    toast('请先选择库')
     return
   }
   
@@ -1158,7 +1476,7 @@ async function createNewGroup() {
     
     // 检查是否已存在同名组
     if (currentLib.groups.some(g => g.name === name)) {
-      alert('组名称已存在')
+      toast('组名称已存在')
       return
     }
     
@@ -1166,7 +1484,7 @@ async function createNewGroup() {
     await saveUserData()
     
     document.getElementById('newGroupDlg').close()
-    alert('组创建成功！')
+    toast('组创建成功！')
     
     // 刷新组列表
     if (document.getElementById('modalGroupsList')) {
@@ -1177,7 +1495,7 @@ async function createNewGroup() {
     }
     
   } catch (error) {
-    alert('创建组失败：' + error.message)
+    toast('创建组失败：' + error.message)
   }
 }
 
@@ -1213,10 +1531,10 @@ async function deleteGroup(libId, groupId) {
       renderGroupSelector(lib)
     }
     
-    alert('组已删除')
+    toast('组已删除')
     
   } catch (error) {
-    alert('删除组失败：' + error.message)
+    toast('删除组失败：' + error.message)
   }
 }
 
@@ -1275,9 +1593,9 @@ async function downloadFile(libId, groupId, fileName) {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     
-    alert('文件下载开始')
+    toast('文件下载开始')
   } catch (error) {
-    alert('下载失败：' + error.message)
+    toast('下载失败：' + error.message)
   }
 }
 
@@ -1287,7 +1605,7 @@ async function copyFileLink(libId, groupId, fileName) {
   
   try {
     await navigator.clipboard.writeText(data.publicUrl)
-    alert('文件链接已复制到剪贴板')
+    toast('文件链接已复制到剪贴板')
   } catch (error) {
     // 降级方案
     const textArea = document.createElement('textarea')
@@ -1296,7 +1614,7 @@ async function copyFileLink(libId, groupId, fileName) {
     textArea.select()
     document.execCommand('copy')
     document.body.removeChild(textArea)
-    alert('文件链接已复制到剪贴板')
+    toast('文件链接已复制到剪贴板')
   }
 }
 
@@ -1308,7 +1626,7 @@ async function deleteFile(libId, groupId, fileName) {
     const { error } = await supabase.storage.from('public').remove([path])
     
     if (error) {
-      alert('删除失败: ' + error.message)
+      toast('删除失败: ' + error.message)
       return
     }
     
@@ -1320,7 +1638,7 @@ async function deleteFile(libId, groupId, fileName) {
       await saveUserData()
     }
     
-    alert('文件删除成功')
+    toast('文件删除成功')
     
     // 刷新文件列表
     if (document.getElementById('filesModalContent')) {
@@ -1328,7 +1646,7 @@ async function deleteFile(libId, groupId, fileName) {
     }
     
   } catch (error) {
-    alert('删除失败：' + error.message)
+    toast('删除失败：' + error.message)
   }
 }
 
@@ -1357,7 +1675,7 @@ async function confirmRename() {
   
   const newName = document.getElementById('renameInput').value.trim()
   if (!newName) {
-    alert('请输入新名称')
+    toast('请输入新名称')
     return
   }
   
@@ -1385,10 +1703,10 @@ async function confirmRename() {
       }
     }
     
-    alert('重命名成功！')
+    toast('重命名成功！')
     
   } catch (error) {
-    alert('重命名失败：' + error.message)
+    toast('重命名失败：' + error.message)
   }
 }
 
@@ -1469,7 +1787,7 @@ async function loadPubUsers() {
       return `
         <div class="user-card" onclick="enterHis('${user.serial}', '${user.username}')">
           <div class="user-avatar">
-            
+            <img src="https://jbcrkuwnlmdmwwmiimhr.supabase.co/storage/v1/object/public/public/u/${user.serial}/avatar/avatar.png">
           </div>
           <div class="user-info">
             <div class="user-name">${user.username || '未知用户'}</div>
@@ -1501,7 +1819,7 @@ async function enterHis(serial, username) {
     .single()
 
   if (error || !userData) {
-    alert('加载用户信息失败: ' + (error?.message || '用户不存在'))
+    toast('加载用户信息失败: ' + (error?.message || '用户不存在'))
     return
   }
 
@@ -1540,6 +1858,136 @@ async function enterHis(serial, username) {
 
   showSection('hisBox')
 }
+async function viewHisGroupFiles(libId, groupId) {
+  console.log('查看公共库文件:', { libId, groupId, currentHis, currentHisLib })
+  
+  const lib = currentHisLib
+  const group = lib.groups.find(g => g.id === groupId)
+  
+  if (!group) {
+    toast('组不存在')
+    return
+  }
+  
+  const container = document.getElementById('hisGroupFilesView')
+  
+  // 显示加载状态
+  container.innerHTML = `
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <span>加载文件中...</span>
+    </div>
+  `
+  
+  try {
+    // 验证文件是否存在并获取最新信息
+    const validatedFiles = await validateHisFiles(libId, groupId, group.files || [])
+    
+    if (validatedFiles.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>📄该组暂无有效文件</p>
+          <p style="font-size: 0.9rem; color: #666;">组 "${group.name}" 中的文件可能已被删除或无法访问</p>
+        </div>
+      `
+      return
+    }
+    
+    // 使用私人库的文件显示方式
+    container.innerHTML = `
+      <div class="group-section">
+        <h4>📁📁 ${group.name} - 文件列表 (${validatedFiles.length} 个文件)</h4>
+        <div class="files-grid-modal" style="max-height: 500px; overflow-y: auto;">
+          ${validatedFiles.map(file => `
+            <div class="file-card-modal">
+              <div class="file-icon-modal">${getFileIcon(file.originalName || file.name)}</div>
+              <div class="file-info-modal">
+                <div class="file-name-modal" title="${file.originalName || file.name}">
+                  ${file.originalName || file.name}
+                  ${file.needsVerification ? ' <span style="color: orange;" title="文件需要验证">⚠️</span>' : ''}
+                </div>
+                <div class="file-meta-modal">
+                  <span>${formatFileSize(file.size)}</span>
+                  <span>${file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : ''}</span>
+                  <span>下载: ${file.downloadCount || 0} 次</span>
+                </div>
+                ${file.storageName ? `
+                  <div class="file-storage-name" style="font-size: 0.7rem; color: #888; margin-top: 0.25rem;">
+                    存储名: ${file.storageName}
+                  </div>
+                ` : ''}
+              </div>
+              <div class="file-actions-modal">
+                <button class="btn-icon" onclick="previewHisFile('${libId}', '${groupId}', '${file.storageName || file.name}', '${file.originalName || file.name}')" title="预览">👁👁️</button>
+                <button class="btn-icon" onclick="downloadHisFile('${libId}', '${groupId}', '${file.storageName || file.name}', '${file.originalName || file.name}')" title="下载">📥📥</button>
+                <button class="btn-icon" onclick="copyHisFileLink('${libId}', '${groupId}', '${file.storageName || file.name}', '${file.originalName || file.name}')" title="复制链接">🔗🔗</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `
+    
+  } catch (error) {
+    console.error('加载公共库文件错误:', error)
+    container.innerHTML = `
+      <div class="error-state">
+        <p>❌❌ 加载文件失败</p>
+        <p style="font-size: 0.9rem; color: #666;">${error.message}</p>
+        <button onclick="viewHisGroupFiles('${libId}', '${groupId}')" class="btn-secondary" style="margin-top: 10px;">重试</button>
+      </div>
+    `
+  }
+}
+async function validateHisFiles(libId, groupId, files) {
+  if (!files || !Array.isArray(files) || files.length === 0) {
+    return []
+  }
+  
+  const validatedFiles = []
+  
+  for (const fileMeta of files) {
+    try {
+      // 构建正确的文件路径
+      const storageFileName = fileMeta.storageName || fileMeta.name
+      const path = `u/${currentHis}/${libId}/${groupId}/${storageFileName}`
+      
+      console.log('验证文件路径:', path)
+      
+      // 检查文件是否存在
+      const { data } = supabase.storage.from('public').getPublicUrl(path)
+      
+      // 使用 HEAD 请求验证文件可访问性
+      const response = await fetch(data.publicUrl, { method: 'HEAD' })
+      
+      if (response.ok) {
+        // 文件存在，添加到有效文件列表
+        validatedFiles.push({
+          ...fileMeta,
+          storageName: storageFileName,
+          originalName: fileMeta.originalName || fileMeta.name,
+          size: fileMeta.size || 0,
+          uploadedAt: fileMeta.uploadedAt || fileMeta.created_at,
+          downloadCount: fileMeta.downloadCount || 0
+        })
+      } else {
+        console.warn(`文件不存在或无法访问: ${storageFileName}`)
+      }
+      
+    } catch (error) {
+      console.warn(`文件验证失败:`, fileMeta, error)
+      // 仍然显示文件，但标记为需要验证
+      validatedFiles.push({
+        ...fileMeta,
+        storageName: fileMeta.storageName || fileMeta.name,
+        originalName: fileMeta.originalName || fileMeta.name,
+        needsVerification: true
+      })
+    }
+  }
+  
+  return validatedFiles
+}
 
 async function enterHisLib(libId, libName, username) {
   try {
@@ -1549,7 +1997,7 @@ async function enterHisLib(libId, libName, username) {
       .single()
 
     if (error || !userData) {
-      alert('加载库信息失败')
+      toast('加载库信息失败')
       return
     }
 
@@ -1563,21 +2011,177 @@ async function enterHisLib(libId, libName, username) {
     const lib = libs.find(l => l.id === libId)
     
     if (!lib) {
-      alert('库不存在')
+      toast('库不存在')
       return
     }
 
     currentHisLib = lib
     document.getElementById('hisLibTitle').textContent = `${username} - ${libName}`
     
-    await loadHisLibFiles(libId, libName)
+    // 使用私人库的加载方式
+    await loadHisLibFilesWithPrivateLogic(libId, libName, lib)
     
     document.getElementById('hisBox').classList.add('hidden')
     document.getElementById('hisLibDetail').classList.remove('hidden')
     
   } catch (error) {
     console.error('进入库详情错误:', error)
-    alert('加载库详情失败: ' + error.message)
+    toast('加载库详情失败: ' + error.message)
+  }
+}
+async function loadHisLibFilesWithPrivateLogic(libId, libName, lib) {
+  const container = document.getElementById('hisFiles')
+  
+  if (!lib.groups || lib.groups.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>📁📁 该库暂无文件</p>
+        <p style="font-size: 0.9rem; color: #666;">库 "${libName}" 中还没有添加任何文件</p>
+      </div>
+    `
+    return
+  }
+  
+  // 使用私人库的弹窗式界面
+  container.innerHTML = `
+    <div class="lib-content">
+      <div class="lib-header">
+        <h3>${libName} - ${document.getElementById('hisName').textContent}</h3>
+        <p>公开库浏览模式</p>
+      </div>
+      
+      <!-- 组列表 -->
+      <div class="groups-grid" style="margin-bottom: 2rem;">
+        ${lib.groups.map(group => `
+          <div class="group-card" onclick="viewHisGroupFiles('${libId}', '${group.id}')">
+            <div class="group-icon">📁📁</div>
+            <div class="group-info">
+              <div class="group-name">${group.name || '未命名组'}</div>
+              <div class="group-stats">${group.files?.length || 0} 个文件</div>
+              <div class="group-date">${group.created_at ? new Date(group.created_at).toLocaleDateString() : ''}</div>
+            </div>
+            <div class="group-actions">
+              <button class="btn-icon" onclick="event.stopPropagation(); viewHisGroupFiles('${libId}', '${group.id}')" title="查看文件">👁👁️</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <!-- 文件查看区域 -->
+      <div id="hisGroupFilesView"></div>
+    </div>
+  `
+}
+async function downloadHisFile(libId, groupId, storageFileName, originalFileName) {
+  console.log('下载公共库文件:', { libId, groupId, storageFileName, originalFileName, currentHis })
+  
+  const safeStorageName = storageFileName || originalFileName
+  const safeOriginalName = originalFileName || storageFileName
+  
+  // 构建正确的文件路径
+  const path = `u/${currentHis}/${libId}/${groupId}/${safeStorageName}`
+  const { data } = supabase.storage.from('public').getPublicUrl(path)
+  
+  console.log('下载文件路径:', path)
+  console.log('公开URL:', data.publicUrl)
+  
+  try {
+    // 显示下载中状态
+    toast(`开始下载: ${safeOriginalName}`)
+    
+    const response = await fetch(data.publicUrl)
+    if (!response.ok) {
+      throw new Error(`文件下载失败: ${response.status} ${response.statusText}`)
+    }
+    
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    
+    const a = document.createElement('a')
+    a.href = url
+    a.download = safeOriginalName // 使用原始中文文件名
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast(`文件 "${safeOriginalName}" 下载完成`)
+    
+  } catch (error) {
+    console.error('下载失败:', error)
+    toast('下载失败：' + error.message)
+  }
+}
+async function previewHisFile(libId, groupId, storageFileName, originalFileName) {
+  const safeStorageName = storageFileName || originalFileName
+  const safeOriginalName = originalFileName || storageFileName
+  
+  const path = `u/${currentHis}/${libId}/${groupId}/${safeStorageName}`
+  const ext = safeOriginalName.split('.').pop().toLowerCase()
+  const { data } = supabase.storage.from('public').getPublicUrl(path)
+  
+  // 创建预览弹窗
+  const previewHtml = `
+    <div id="previewModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>${safeOriginalName}</h3>
+          <button class="close-btn" onclick="closePreview()">✕✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="previewContent">
+            <div class="file-preview-info">
+              <p><strong>文件名:</strong> ${safeOriginalName}</p>
+              <p><strong>文件类型:</strong> ${ext}</p>
+              <p><strong>来源:</strong> ${document.getElementById('hisName').textContent} 的公开库</p>
+            </div>
+            ${['jpg','jpeg','png','gif','webp'].includes(ext) ? 
+              `<div class="image-preview">
+                
+               </div>` :
+              `<div class="text-preview">
+                <p>不支持在线预览，请下载查看</p>
+               </div>`
+            }
+          </div>
+          <div class="modal-actions">
+            <button onclick="downloadHisFile('${libId}', '${groupId}', '${safeStorageName}', '${safeOriginalName}')" class="btn-primary">下载文件</button>
+            <button onclick="copyHisFileLink('${libId}', '${groupId}', '${safeStorageName}', '${safeOriginalName}')" class="btn-secondary">复制链接</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+  
+  document.body.insertAdjacentHTML('beforeend', previewHtml)
+}
+
+function closePreview() {
+  const modal = document.getElementById('previewModal')
+  if (modal) modal.remove()
+}
+
+async function copyHisFileLink(libId, groupId, storageFileName, originalFileName) {
+  const safeStorageName = storageFileName || originalFileName
+  const safeOriginalName = originalFileName || storageFileName
+  
+  const path = `u/${currentHis}/${libId}/${groupId}/${safeStorageName}`
+  const { data } = supabase.storage.from('public').getPublicUrl(path)
+  
+  const linkInfo = `文件名: ${safeOriginalName}\n下载链接: ${data.publicUrl}`
+  
+  try {
+    await navigator.clipboard.writeText(linkInfo)
+    toast('文件信息已复制到剪贴板\n包含文件名和下载链接')
+  } catch (error) {
+    // 降级方案
+    const textArea = document.createElement('textarea')
+    textArea.value = linkInfo
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+    toast('文件信息已复制到剪贴板')
   }
 }
 
@@ -1633,9 +2237,9 @@ async function downloadHisFile(libId, groupId, fileName) {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     
-    alert('文件下载开始')
+    toast('文件下载开始')
   } catch (error) {
-    alert('下载失败：' + error.message)
+    toast('下载失败：' + error.message)
   }
 }
 
@@ -1645,7 +2249,7 @@ async function copyHisFileLink(libId, groupId, fileName) {
   
   try {
     await navigator.clipboard.writeText(data.publicUrl)
-    alert('公开链接已复制')
+    toast('公开链接已复制')
   } catch (error) {
     const textArea = document.createElement('textarea')
     textArea.value = data.publicUrl
@@ -1653,7 +2257,7 @@ async function copyHisFileLink(libId, groupId, fileName) {
     textArea.select()
     document.execCommand('copy')
     document.body.removeChild(textArea)
-    alert('公开链接已复制')
+    toast('公开链接已复制')
   }
 }
 
@@ -1668,12 +2272,12 @@ async function saveReadme() {
       .upload(`u/${current.serial}/README.md`, blob, { upsert: true })
     
     if (error) {
-      alert('保存失败：' + error.message)
+      toast('保存失败：' + error.message)
     } else {
-      alert('已保存')
+      toast('已保存')
     }
   } catch (error) {
-    alert('保存异常：' + error.message)
+    toast('保存异常：' + error.message)
   }
 }
 
@@ -1797,7 +2401,7 @@ INSERT INTO profiles (username, pwd, serial, avatar_url) VALUES
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "所有人可以管理所有数据" ON profiles FOR ALL USING (true);`
   
-  alert('请将以下SQL代码复制到Supabase SQL编辑器中执行：\n\n' + sqlCode)
+  toast('请将以下SQL代码复制到Supabase SQL编辑器中执行：\n\n' + sqlCode)
 }
 
 /* ===== 工具函数 ===== */
@@ -1856,44 +2460,22 @@ async function saveUserData() {
 
 /* ===== 初始化应用 ===== */
 function initApp() {
-  console.log('应用初始化...')
-  
-  // 检查是否有保存的登录状态
-  const savedUser = localStorage.getItem('currentUser')
-  if (savedUser) {
+  const saved = localStorage.getItem('currentUser');
+  if (saved) {
     try {
-      current = JSON.parse(savedUser)
+      current = JSON.parse(saved);
       if (current.serial) {
-        console.log('发现已登录用户:', current.username)
-        // 更新界面显示
-        document.getElementById('showSerial').innerText = current.serial
-        const avatarImg = document.getElementById('avatarImg')
-        if (avatarImg) {
-          avatarImg.src = current.avatar_url || getDefaultAvatar(current.username)
-        }
-        // 直接显示我的空间
-        showSection('myBox')
-        // 加载数据
-        setTimeout(() => {
-          loadMyLibs()
-          loadReadme()
-        }, 100)
-        return
+        document.getElementById('showSerial').innerText = current.serial;
+        document.getElementById('logoutBtn').style.display = 'inline-flex'; // ✅
+        showSection('myBox');
+        setTimeout(() => { loadMyLibs(); loadReadme(); }, 100);
+        return;
       }
-    } catch (error) {
-      console.error('恢复登录状态失败:', error)
-      localStorage.removeItem('currentUser')
-    }
+    } catch { localStorage.removeItem('currentUser'); }
   }
-  
-  // 默认显示公共空间
-  showSection('pubBox')
-  // 加载公共用户列表
-  setTimeout(() => {
-    loadPubUsers()
-  }, 100)
+  showSection('pubBox');
+  setTimeout(loadPubUsers, 100);
 }
-
 // 页面加载时初始化
 window.addEventListener('load', initApp)
 
