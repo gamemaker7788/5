@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>223班随机抽人</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #2a2a2a;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #333 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            padding: 25px;
+            text-align: center;
+            border-bottom: 1px solid #444;
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .header .subtitle {
+            opacity: 0.8;
+            font-size: 1em;
+        }
+        
+        .main-content {
+            padding: 25px;
+        }
+        
+        /* 抽奖区域 */
+        .lottery-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .result-display {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
+            border-radius: 15px;
+            margin: 15px 0;
+            border: 2px solid #555;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .result-display.rolling {
+            animation: rollEffect 0.08s infinite;
+            color: #4a9eff;
+        }
+        
+        .current-result {
+            font-size: 2.2em;
+            font-weight: 700;
+            color: #4a9eff;
+            padding: 0 20px;
+            text-align: center;
+            line-height: 1.2;
+            max-width: 100%;
+            overflow-wrap: break-word;
+        }
+        
+        .result-label {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 1em;
+            color: #aaa;
+        }
+        
+        /* 控制按钮 */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .control-btn {
+            padding: 16px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 2px solid;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 黑色主题按钮 */
+        .draw-btn {
+            background: #333;
+            color: #4a9eff;
+            border-color: #4a9eff;
+        }
+        
+        .draw-btn:hover:not(:disabled) {
+            background: #4a9eff;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 0 #2a5da5;
+        }
+        
+        .reset-btn {
+            background: #333;
+            color: #ffa726;
+            border-color: #ffa726;
+        }
+        
+        .reset-btn:hover:not(:disabled) {
+            background: #ffa726;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 0 #cc8400;
+        }
+        
+        .clear-btn {
+            background: #333;
+            color: #ef5350;
+            border-color: #ef5350;
+        }
+        
+        .clear-btn:hover:not(:disabled) {
+            background: #ef5350;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 0 #c62828;
+        }
+        
+        .control-btn:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* 统计数据 */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: #333;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #444;
+        }
+        
+        .stat-value {
+            font-size: 2.2em;
+            font-weight: 800;
+            color: #4a9eff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.85em;
+            color: #aaa;
+            font-weight: 600;
+        }
+        
+        /* 名单显示 */
+        .lists-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .list-section {
+            background: #333;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #444;
+        }
+        
+        .list-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .name-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .name-tag {
+            background: #2a2a2a;
+            padding: 5px 10px;
+            border-radius: 15px;
+            border: 1px solid #555;
+            font-size: 0.85em;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #e0e0e0;
+        }
+        
+        .name-tag.selected {
+            background: #4a9eff;
+            color: #fff;
+            border-color: #2a5da5;
+        }
+        
+        /* 动画 */
+        @keyframes rollEffect {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+            100% { transform: translateY(0); }
+        }
+        
+        @keyframes highlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .highlight {
+            animation: highlight 0.4s ease;
+        }
+        
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+            border: 2px solid #555;
+            border-left: 5px solid #4a9eff;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* 导出按钮 */
+        .export-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #333;
+            color: #9C27B0;
+            border: 2px solid #9C27B0;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 1000;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.2s ease;
+        }
+        
+        .export-btn:hover {
+            background: #9C27B0;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 0 #6a1b9a;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .lists-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .current-result {
+                font-size: 1.8em;
+            }
+            
+            .result-display {
+                height: 100px;
+            }
+        }
+        
+        /* 滚动条样式 */
+        .name-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .name-list::-webkit-scrollbar-track {
+            background: #444;
+            border-radius: 3px;
+        }
+        
+        .name-list::-webkit-scrollbar-thumb {
+            background: #4a9eff;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>223班随机抽人</h1>
+            <p class="subtitle">等掉吧</p>
+            <p class="subtitle">农场主来抽你了</p>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 抽奖结果展示 -->
+            <div class="lottery-area">
+                <div class="result-display" id="resultDisplay">
+                    <span class="result-label">抽中：</span>
+                    <div class="current-result" id="currentResult">等待抽选...</div>
+                </div>
+            </div>
+            
+            <!-- 控制按钮 -->
+            <div class="controls">
+                <button class="control-btn draw-btn" id="drawBtn">
+                    <span>🎲</span> 随机抽取
+                </button>
+                <button class="control-btn reset-btn" id="resetBtn">
+                    <span>🔄</span> 重置
+                </button>
+                <button class="control-btn clear-btn" id="clearBtn">
+                    <span>🗑️</span> 清空
+                </button>
+            </div>
+            
+            <!-- 统计数据 -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalStudents">60</div>
+                    <div class="stat-label">总人数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="remainingStudents">60</div>
+                    <div class="stat-label">剩余</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="selectedCount">0</div>
+                    <div class="stat-label">已抽中</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="selectionCount">0</div>
+                    <div class="stat-label">抽取次数</div>
+                </div>
+            </div>
+            
+            <!-- 名单显示区 -->
+            <div class="lists-container">
+                <!-- 未抽中名单 -->
+                <div class="list-section">
+                    <h3 class="list-title">
+                        <span>📋</span> 待抽名单 (<span id="remainingCount">60</span>人)
+                    </h3>
+                    <div class="name-list" id="availableList">
+                        <!-- 名单将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 已抽中名单 -->
+                <div class="list-section">
+                    <h3 class="list-title">
+                        <span>🏆</span> 已抽中名单 (<span id="selectedListCount">0</span>人)
+                    </h3>
+                    <div class="name-list" id="selectedList">
+                        <div style="color: #aaa; font-style: italic; text-align: center; width: 100%;">
+                            暂无已抽中人员
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class RandomSelectionSystem {
+            constructor() {
+                // 根据成绩表图片整理的准确名单（60人）
+                this.allStudents = [
+                    "冯俊恺", "张津淇", "付梓妤", "刘馨阳", "王文钰", "王琦朝", "李佳媛", 
+                    "杨迦勒", "刘舒涵", "邵中昊", "赵若熙", "郝钰琳", "渠皓宇", "王昱朝", 
+                    "尚湛清", "武以隆", "郝雨萱", "杨瀚智", "杨治烨", "朱诗涵", "王平", 
+                    "王烽骁", "李晨毅", "范馨子", "曹家煜", "王祥妤", "米莉霞", "郭丰恺", 
+                    "张祥蓉", "王怀耀", "胡峰仪", "梁雅茹", "庞涵文", "胡峰琦", "任珂妤", 
+                    "张馨月", "王振宇", "裴梓妤", "王智琪", "杨天赐", "宋时慷", "范雨欣",
+                    "王德疆", "范景月", "李翔阳", "赵紫蕊", "安芮莹", "胡豪晟", 
+                    "武琰钧", "魏王舒懿", "赵浦妤", "刘秦熙", "赵景涵", "胡钧瑞", "郭滨锐", 
+                    "侯钦壬", "宋淘令", "宋唯宁", "王颢颢璇"
+                ];
+                
+                // 去除可能的重复
+                this.allStudents = [...new Set(this.allStudents)];
+                
+                // 按字母排序
+                this.allStudents.sort((a, b) => a.localeCompare(b, 'zh-CN'));
+                
+                // 状态管理
+                this.availableStudents = [...this.allStudents];
+                this.selectedStudents = [];
+                this.totalSelections = 0;
+                
+                // 滚动相关
+                this.isRolling = false;
+                this.rollInterval = null;
+                this.rollDuration = 1500; // 缩短滚动时间为1.5秒
+                
+                this.init();
+            }
+            
+            init() {
+                this.updateUI();
+                this.renderNameLists();
+                
+                // 绑定事件
+                document.getElementById('drawBtn').addEventListener('click', () => this.drawRandom());
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetSelected());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clearAll());
+                
+                console.log('✅ 系统初始化完成');
+                console.log('📊 总人数:', this.allStudents.length);
+                console.log('👥 名单:', this.allStudents.join(', '));
+            }
+            
+            drawRandom() {
+                if (this.isRolling || this.availableStudents.length === 0) {
+                    return;
+                }
+                
+                // 开始滚动效果
+                this.startRolling();
+                
+                // 缩短滚动时间
+                setTimeout(() => {
+                    this.stopRollingAndSelect();
+                }, this.rollDuration);
+            }
+            
+            startRolling() {
+                this.isRolling = true;
+                const resultDisplay = document.getElementById('resultDisplay');
+                const currentResult = document.getElementById('currentResult');
+                
+                // 添加滚动效果
+                resultDisplay.classList.add('rolling');
+                currentResult.style.fontSize = '2.2em'; // 固定字体大小
+                
+                // 快速显示随机名字
+                this.rollInterval = setInterval(() => {
+                    const randomIndex = Math.floor(Math.random() * this.availableStudents.length);
+                    const name = this.availableStudents[randomIndex];
+                    currentResult.textContent = name;
+                    
+                    // 确保名字不换行
+                    if (name.length > 4) {
+                        currentResult.style.fontSize = '1.8em';
+                    } else {
+                        currentResult.style.fontSize = '2.2em';
+                    }
+                }, 50);
+                
+                // 禁用按钮
+                document.getElementById('drawBtn').disabled = true;
+            }
+            
+            stopRollingAndSelect() {
+                clearInterval(this.rollInterval);
+                this.isRolling = false;
+                
+                const resultDisplay = document.getElementById('resultDisplay');
+                const currentResult = document.getElementById('currentResult');
+                
+                // 移除滚动效果
+                resultDisplay.classList.remove('rolling');
+                
+                // 随机选择一个学生
+                const randomIndex = Math.floor(Math.random() * this.availableStudents.length);
+                const selectedStudent = this.availableStudents[randomIndex];
+                
+                // 显示最终结果
+                currentResult.textContent = selectedStudent;
+                
+                // 调整长名字的字体大小
+                if (selectedStudent.length > 4) {
+                    currentResult.style.fontSize = '1.8em';
+                } else {
+                    currentResult.style.fontSize = '2.2em';
+                }
+                
+                currentResult.classList.add('highlight');
+                
+                // 添加到已选列表
+                this.selectedStudents.push(selectedStudent);
+                
+                // 从可用列表移除
+                this.availableStudents.splice(randomIndex, 1);
+                
+                // 更新统计
+                this.totalSelections++;
+                
+                // 更新UI
+                this.updateUI();
+                this.renderNameLists();
+                
+                // 提示
+                this.showNotification(`🎉 抽中：${selectedStudent}`, 'success');
+                
+                // 启用按钮
+                document.getElementById('drawBtn').disabled = false;
+                
+                // 移除高亮动画
+                setTimeout(() => {
+                    currentResult.classList.remove('highlight');
+                }, 800);
+                
+                // 如果抽完了所有人，显示提示
+                if (this.availableStudents.length === 0) {
+                    setTimeout(() => {
+                        this.showNotification('🎊 恭喜！所有人已抽取完毕！', 'info');
+                    }, 500);
+                }
+            }
+            
+            resetSelected() {
+                if (this.selectedStudents.length === 0) {
+                    this.showNotification('还没有人参与抽奖呢！', 'warning');
+                    return;
+                }
+                
+                if (confirm(`确定要重置吗？已抽取的 ${this.selectedStudents.length} 人将放回待抽名单。`)) {
+                    // 将已选学生放回可用名单
+                    this.availableStudents = [...this.availableStudents, ...this.selectedStudents];
+                    this.selectedStudents = [];
+                    
+                    // 更新UI
+                    this.updateUI();
+                    this.renderNameLists();
+                    
+                    // 清空结果显示
+                    const currentResult = document.getElementById('currentResult');
+                    currentResult.textContent = '等待抽选...';
+                    currentResult.style.fontSize = '2.2em';
+                    
+                    this.showNotification('✅ 已重置抽奖名单！', 'success');
+                }
+            }
+            
+            clearAll() {
+                if (confirm('确定要清空所有记录吗？这将恢复初始状态。')) {
+                    // 重置所有数据
+                    this.availableStudents = [...this.allStudents];
+                    this.selectedStudents = [];
+                    this.totalSelections = 0;
+                    
+                    // 更新UI
+                    this.updateUI();
+                    this.renderNameLists();
+                    
+                    // 清空结果显示
+                    const currentResult = document.getElementById('currentResult');
+                    currentResult.textContent = '等待抽选...';
+                    currentResult.style.fontSize = '2.2em';
+                    
+                    this.showNotification('🧹 已清空所有记录！', 'success');
+                }
+            }
+            
+            updateUI() {
+                // 更新统计数据
+                document.getElementById('totalStudents').textContent = this.allStudents.length;
+                document.getElementById('remainingStudents').textContent = this.availableStudents.length;
+                document.getElementById('selectedCount').textContent = this.selectedStudents.length;
+                document.getElementById('selectionCount').textContent = this.totalSelections;
+                document.getElementById('remainingCount').textContent = this.availableStudents.length;
+                document.getElementById('selectedListCount').textContent = this.selectedStudents.length;
+                
+                // 更新按钮状态
+                const drawBtn = document.getElementById('drawBtn');
+                const resetBtn = document.getElementById('resetBtn');
+                
+                drawBtn.disabled = this.availableStudents.length === 0;
+                resetBtn.disabled = this.selectedStudents.length === 0;
+                
+                // 更新按钮文本
+                drawBtn.innerHTML = this.availableStudents.length === 0 
+                    ? '<span>✅</span> 所有人已抽完'
+                    : `<span>🎲</span> 抽取 (${this.availableStudents.length}人)`;
+            }
+            
+            renderNameLists() {
+                const availableList = document.getElementById('availableList');
+                const selectedList = document.getElementById('selectedList');
+                
+                // 渲染可用名单
+                availableList.innerHTML = '';
+                this.availableStudents.forEach(name => {
+                    const nameTag = document.createElement('div');
+                    nameTag.className = 'name-tag';
+                    nameTag.textContent = name;
+                    availableList.appendChild(nameTag);
+                });
+                
+                // 渲染已选名单
+                selectedList.innerHTML = '';
+                if (this.selectedStudents.length === 0) {
+                    selectedList.innerHTML = `
+                        <div style="color: #aaa; font-style: italic; text-align: center; width: 100%; padding: 20px;">
+                            暂无已抽中人员
+                        </div>
+                    `;
+                } else {
+                    this.selectedStudents.forEach(name => {
+                        const nameTag = document.createElement('div');
+                        nameTag.className = 'name-tag selected';
+                        nameTag.innerHTML = `<span>🏆</span> ${name}`;
+                        selectedList.appendChild(nameTag);
+                    });
+                }
+            }
+            
+            showNotification(message, type) {
+                const colors = {
+                    'success': { border: '#4a9eff' },
+                    'warning': { border: '#ffa726' },
+                    'info': { border: '#4a9eff' }
+                };
+                
+                const color = colors[type] || colors.info;
+                
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.borderLeftColor = color.border;
+                
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.2em;">${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+                        <span>${message}</span>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+            
+            // 导出功能
+            exportResults() {
+                const data = {
+                    date: new Date().toLocaleString('zh-CN'),
+                    class: '223班',
+                    totalStudents: this.allStudents.length,
+                    selectedStudents: this.selectedStudents,
+                    remainingStudents: this.availableStudents,
+                    selectionCount: this.totalSelections
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `223班抽奖记录_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                
+                this.showNotification('📥 记录已导出！', 'success');
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            const system = new RandomSelectionSystem();
+            window.selectionSystem = system;
+            
+            // 添加快捷键
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ' && !e.target.matches('input, textarea')) {
+                    e.preventDefault();
+                    if (!system.isRolling && system.availableStudents.length > 0) {
+                        system.drawRandom();
+                    }
+                }
+                if (e.key === 'r' && e.ctrlKey) {
+                    e.preventDefault();
+                    system.resetSelected();
+                }
+            });
+            
+            // 添加导出按钮
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'export-btn';
+            exportBtn.innerHTML = '📥 导出记录';
+            exportBtn.onclick = () => system.exportResults();
+            document.body.appendChild(exportBtn);
+            
+            console.log('🎯 黑色主题随机抽人系统已就绪');
+            console.log('💡 快捷键：空格键 - 抽取，Ctrl+R - 重置');
+        });
+    </script>
+</body>
+</html>
