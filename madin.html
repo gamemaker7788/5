@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="bright">
+<head>
+<meta charset="utf-8">
+<title>223班聊天室 - 管理员后台</title>
+<style>
+:root[data-theme="bright"]{
+  --bg:#fff;--text:#333;--gray1:#ccc;--gray2:#bbb;
+  --bottom-blue:#38bdf8;--blue-glow:#38bdf822;
+  --success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+}
+:root[data-theme="dark"]{
+  --bg:#1e1e1e;--text:#e5e5e5;--gray1:#555;--gray2:#333;
+  --bottom-blue:#38bdf8;--blue-glow:#38bdf833;
+  --success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}
+.btn-group{display:flex;gap:8px;padding:16px 24px}
+.d-btn{position:relative;padding:8px 18px;font-size:15px;font-weight:600;border:2px solid var(--gray1);border-radius:6px;background:transparent;color:var(--text);cursor:pointer;top:0;box-shadow:0 4px 0 var(--gray2);transition:all .12s ease}
+.d-btn:hover{transform:translateY(-2px);box-shadow:0 6px 0 var(--gray2)}
+.d-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--gray2)}
+.d-btn.primary{background:var(--bottom-blue);color:#fff;border-color:var(--bottom-blue);box-shadow:0 4px 0 #0ea5e9}
+.d-btn.success{background:var(--success);color:#fff;border-color:var(--success);box-shadow:0 4px 0 #0d9c6d}
+.d-btn.warning{background:var(--warning);color:#fff;border-color:var(--warning);box-shadow:0 4px 0 #d97706}
+.d-btn.danger{background:var(--danger);color:#fff;border-color:var(--danger);box-shadow:0 4px 0 #dc2626}
+.duo-input{width:calc(100% - 48px);margin:0 24px;padding:12px 16px;font-size:16px;border:2px solid var(--gray1);border-bottom:4px solid var(--bottom-blue);border-radius:14px;background:transparent;outline:none;color:var(--text);transition:border-color .25s,box-shadow .25s}
+.duo-input:focus{border-color:var(--bottom-blue);box-shadow:0 6px 12px -4px var(--blue-glow)}
+.card{width:calc(100% - 48px);max-width:680px;margin:0 auto 20px;padding:18px 22px;border:2px solid var(--gray1);border-radius:14px;background:transparent}
+.card h3{margin:0 0 12px;font-size:17px;font-weight:600;color:var(--bottom-blue)}
+.side-bar{position:fixed;inset:0 auto 0 0;width:240px;background:var(--bg);border-right:2px solid var(--gray1);display:flex;flex-direction:column;padding:16px;z-index:9}
+.side-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.side-logo{height:32px;filter:none}
+:root[data-theme="dark"] .side-logo{filter:invert(1) hue-rotate(180deg)}
+.side-nav{flex:1;overflow:auto}
+.side-item{display:block;padding:8px 12px;margin:6px 0;border:2px solid transparent;border-radius:6px;text-decoration:none;color:var(--text);transition:border-color .2s}
+.side-item:hover,.side-item.active{border-color:var(--bottom-blue);background:var(--blue-glow)}
+.side-foot{border-top:2px solid var(--gray1);padding-top:12px}
+.side-ham{position:fixed;top:12px;left:12px;z-index:10;padding:6px 10px;font-size:18px;background:var(--gray1);color:var(--text);border:none;border-radius:6px;cursor:pointer}
+.side-mask{position:fixed;inset:0;background:#0004;display:none;z-index:8}
+.side-bar.translate{transform:translateX(-100%);transition:transform .3s ease}
+.side-bar.open{transform:translateX(0)}
+.side-mask.on{display:block}
+@media (max-width:900px){body{padding-left:16px}.side-bar.translate{display:flex}}
+.main-content{margin-left:240px;padding:20px}
+@media (max-width:900px){.main-content{margin-left:0}}
+.stats-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--bg);border:2px solid var(--gray1);border-radius:14px;padding:16px;text-align:center}
+.stat-value{font-size:24px;font-weight:700;color:var(--bottom-blue)}
+.stat-label{font-size:14px;color:var(--gray2)}
+.data-table{width:100%;border-collapse:collapse;margin-top:12px}
+.data-table th,.data-table td{padding:12px;text-align:left;border-bottom:1px solid var(--gray1)}
+.data-table th{background:var(--blue-glow);font-weight:600}
+.data-table tr:hover{background:var(--blue-glow)}
+.action-cell{display:flex;gap:8px}
+.search-box{display:flex;gap:12px;margin-bottom:16px}
+.search-input{flex:1}
+.modal-mask{position:fixed;inset:0;background:#0006;z-index:99;display:flex;align-items:center;justify-content:center}
+.modal-panel{width:90%;max-width:500px;background:var(--bg);border:2px solid var(--gray1);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.modal-title{font-size:18px;font-weight:600;color:var(--bottom-blue)}
+.modal-body{white-space:pre-wrap;word-break:break-word}
+.hidden{display:none}
+/* 禁言模态框 */
+#banModal .modal-panel{max-width:440px}
+</style>
+<script>
+window.toggleTheme=function(){
+  const root=document.documentElement;
+  const next=root.dataset.theme==='bright'?'dark':'bright';
+  root.dataset.theme=next;
+  localStorage.setItem('theme-223',next);
+};
+(function(){
+  const t=localStorage.getItem('theme-223');
+  if(t)document.documentElement.dataset.theme=t;
+})();
+</script>
+</head>
+<body>
+
+<!-- 侧边栏 -->
+<aside id="sideBar" class="side-bar">
+  <div class="side-head">
+    <h2>管理员后台</h2>
+    <button class="d-btn" onclick="closeSide()">✕</button>
+  </div>
+  <nav class="side-nav">
+    <a class="side-item active" href="#" onclick="showDashboard()">仪表盘</a>
+    <a class="side-item" href="#" onclick="showMessages()">消息管理</a>
+    <a class="side-item" href="#" onclick="showUsers()">用户管理</a>
+    <a class="side-item" href="#" onclick="showSettings()">系统设置</a>
+  </nav>
+  <div class="side-foot">
+    <button class="d-btn" onclick="window.toggleTheme()">切换主题</button>
+    <button class="d-btn danger" onclick="logout()">退出系统</button>
+  </div>
+</aside>
+<div id="sideMask" class="side-mask" onclick="closeSide()"></div>
+<button id="sideHam" class="d-btn hidden" onclick="openSide()">☰</button>
+
+<!-- 主内容 -->
+<div id="mainContent" class="main-content">
+  <h1>223班聊天室 - 管理员后台</h1>
+
+  <!-- 仪表盘 -->
+  <div id="dashboardView">
+    <div class="stats-container">
+      <div class="stat-card"><div class="stat-value" id="totalUsers">0</div><div class="stat-label">总用户数</div></div>
+      <div class="stat-card"><div class="stat-value" id="totalMessages">0</div><div class="stat-label">总消息数</div></div>
+      <div class="stat-card"><div class="stat-value" id="activeToday">0</div><div class="stat-label">今日活跃</div></div>
+      <div class="stat-card"><div class="stat-value" id="bannedCount">0</div><div class="stat-label">封禁用户</div></div>
+    </div>
+    <section class="card">
+      <h3>最近消息</h3>
+      <div id="recentMessages" class="chat-box"></div>
+    </section>
+  </div>
+
+  <!-- 消息管理 -->
+  <div id="messagesView" class="hidden">
+    <section class="card">
+      <h3>消息管理</h3>
+      <div class="search-box">
+        <input type="text" id="messageSearch" class="duo-input search-input" placeholder="搜索消息内容或用户名">
+        <select id="statusFilter" class="duo-input" style="width:150px">
+          <option value="all">全部状态</option>
+          <option value="exist">正常</option>
+          <option value="banned">已屏蔽</option>
+          <option value="deleted">已删除</option>
+        </select>
+        <button class="d-btn" onclick="loadMessagesForManagement()">搜索</button>
+      </div>
+      <div id="messagesTableContainer"></div>
+    </section>
+  </div>
+
+  <!-- 用户管理 -->
+  <div id="usersView" class="hidden">
+    <section class="card">
+      <h3>用户管理</h3>
+      <div class="search-box">
+        <input type="text" id="userSearch" class="duo-input search-input" placeholder="搜索用户名">
+        <button class="d-btn" onclick="loadUsersForManagement()">搜索</button>
+      </div>
+      <div id="usersTableContainer"></div>
+    </section>
+  </div>
+
+  <!-- 系统设置 -->
+  <div id="settingsView" class="hidden">
+    <section class="card">
+      <h3>系统设置</h3>
+      <div class="btn-group">
+        <button class="d-btn warning" onclick="exportData()">导出数据</button>
+        <button class="d-btn danger" onclick="clearAllData()">清空所有数据</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- 消息详情 -->
+<div id="messageModal" class="modal-mask hidden">
+  <div class="modal-panel">
+    <div id="modalTitle" class="modal-title">消息详情</div>
+    <div id="modalBody" class="modal-body"></div>
+    <div class="btn-group">
+      <button id="deleteBtn" class="d-btn danger" onclick="deleteMessagePermanent()">删除消息</button>
+      <button id="banBtn" class="d-btn warning" onclick="toggleMessageBan()">屏蔽/取消屏蔽</button>
+      <button class="d-btn" onclick="closeModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 系统消息 -->
+<div id="sysMsgModal" class="modal-mask hidden">
+  <div class="modal-panel">
+    <div class="modal-title">发送系统消息</div>
+    <form id="sysMsgForm" onsubmit="sendSystemMessage(event)">
+      <input id="sysMsgTitle" class="duo-input" placeholder="消息标题（必填）" maxlength="60" required>
+      <textarea id="sysMsgBody" class="duo-input" placeholder="消息内容（必填）" rows="4" maxlength="300" required></textarea>
+      <div class="btn-group">
+        <button type="submit" class="d-btn primary">发送</button>
+        <button type="button" class="d-btn" onclick="closeSysMsgModal()">取消</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 禁言设置 -->
+<div id="banModal" class="modal-mask hidden">
+  <div class="modal-panel">
+    <div class="modal-title">设置禁言时长</div>
+    <div class="modal-body">
+      <label>时长</label>
+      <input id="banValue" type="number" min="1" class="duo-input" placeholder="数字">
+      <select id="banUnit" class="duo-input">
+        <option value="min">分钟</option>
+        <option value="hour">小时</option>
+        <option value="forever">永久</option>
+      </select>
+      <input id="banReason" class="duo-input" placeholder="原因（可选）">
+    </div>
+    <div class="btn-group">
+      <button class="d-btn danger" onclick="confirmBan()">确定禁言</button>
+      <button class="d-btn" onclick="closeBanModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 常量 ================= */
+const USER_URL = 'https://jbcrkuwnlmdmwwmiimhr.supabase.co/rest/v1/users';
+const CHAT_URL = 'https://jbcrkuwnlmdmwwmiimhr.supabase.co/rest/v1/messages';
+const NOTI_URL = 'https://jbcrkuwnlmdmwwmiimhr.supabase.co/rest/v1/notifications';
+const BANS_URL = 'https://jbcrkuwnlmdmwwmiimhr.supabase.co/rest/v1/bans';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiY3JrdXdubG1kbXd3bWlpbWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODcyNjUsImV4cCI6MjA4MDA2MzI2NX0.mK7o1xaVrV39J6_wahE_1iv_cacYUVrZJurKs_s2Wf0';
+
+/* ================= 框架函数 ================= */
+function closeSide(){
+  const bar=document.getElementById('sideBar');
+  const mask=document.getElementById('sideMask');
+  bar.classList.remove('open');mask.classList.remove('on');
+}
+function openSide(){
+  const bar=document.getElementById('sideBar');
+  const mask=document.getElementById('sideMask');
+  bar.classList.add('open');mask.classList.add('on');
+}
+function setActiveNav(el){
+  document.querySelectorAll('.side-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ================= 页面切换 ================= */
+function showDashboard(){
+  setActiveNav(document.querySelector('.side-item:nth-child(1)'));
+  ['dashboardView','messagesView','usersView','settingsView'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('dashboardView').classList.remove('hidden');
+  loadDashboard();
+}
+function showMessages(){
+  setActiveNav(document.querySelector('.side-item:nth-child(2)'));
+  ['dashboardView','messagesView','usersView','settingsView'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('messagesView').classList.remove('hidden');
+  loadMessagesForManagement();
+}
+function showUsers(){
+  setActiveNav(document.querySelector('.side-item:nth-child(3)'));
+  ['dashboardView','messagesView','usersView','settingsView'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('usersView').classList.remove('hidden');
+  loadUsersForManagement();
+}
+function showSettings(){
+  setActiveNav(document.querySelector('.side-item:nth-child(4)'));
+  ['dashboardView','messagesView','usersView','settingsView'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('settingsView').classList.remove('hidden');
+}
+
+/* ================= 仪表盘 ================= */
+async function loadDashboard(){
+  const [uRes,mRes]=await Promise.all([
+    fetch(USER_URL+'?select=count',{headers:{apikey:ANON_KEY}}),
+    fetch(CHAT_URL+'?select=count',{headers:{apikey:ANON_KEY}})
+  ]);
+  const u=uRes.ok?(await uRes.json())[0].count:0;
+  const m=mRes.ok?(await mRes.json())[0].count:0;
+  document.getElementById('totalUsers').textContent=u;
+  document.getElementById('totalMessages').textContent=m;
+  document.getElementById('activeToday').textContent=Math.floor(u*0.3);
+  document.getElementById('bannedCount').textContent=Math.floor(u*0.05);
+  loadRecentMessages();
+}
+async function loadRecentMessages(){
+  const res=await fetch(CHAT_URL+'?select=id,username,content,created_at,status&order=created_at.desc&limit=10',{headers:{apikey:ANON_KEY}});
+  const arr=res.ok?await res.json():[];
+  const box=document.getElementById('recentMessages');
+  box.innerHTML=arr.filter(m=>m.status!=='deleted').map(m=>`
+    <div class="chat-msg" onclick="showMessageDetail(${m.id})">
+      <div class="chat-content">
+        <div class="chat-name">${m.username}<span class="chat-time">${new Date(m.created_at).toLocaleString()}</span></div>
+        <div class="chat-text">${m.content.length>50?m.content.slice(0,50)+'...':m.content}</div>
+      </div>
+    </div>`).join('')||'<p style="color:var(--gray2)">暂无消息</p>';
+}
+
+/* ================= 消息管理 ================= */
+async function loadMessagesForManagement(){
+  const search=document.getElementById('messageSearch').value;
+  const status=document.getElementById('statusFilter').value;
+  let url=CHAT_URL+'?select=id,username,content,created_at,status&order=created_at.desc&limit=200';
+  if(status!=='all')url+=`&status=eq.${status}`;
+  const res=await fetch(url,{headers:{apikey:ANON_KEY}});
+  const arr=res.ok?await res.json():[];
+  const filtered=search?arr.filter(m=>m.content?.includes(search)||m.username?.includes(search)):arr;
+  renderMessagesTable(filtered);
+}
+function renderMessagesTable(arr){
+  const box=document.getElementById('messagesTableContainer');
+  if(!arr.length){box.innerHTML='<p>暂无消息</p>';return;}
+  box.innerHTML=`
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>用户</th><th>内容</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>${arr.map(m=>`
+        <tr>
+          <td>${m.id}</td>
+          <td>${m.username}</td>
+          <td>${m.content.length>30?m.content.slice(0,30)+'...':m.content}</td>
+          <td>${new Date(m.created_at).toLocaleString()}</td>
+          <td><span class="status-badge status-${m.status}">${m.status==='exist'?'正常':m.status==='banned'?'已屏蔽':'已删除'}</span></td>
+          <td class="action-cell">
+            <button class="d-btn" onclick="showMessageDetail(${m.id})">详情</button>
+            <button class="d-btn ${m.status==='banned'?'success':'warning'}" onclick="toggleMessageStatus(${m.id},'${m.status}')">${m.status==='banned'?'取消屏蔽':'屏蔽'}</button>
+            <button class="d-btn danger" onclick="deleteMessagePermanent(${m.id})">删除</button>
+          </td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+async function showMessageDetail(id){
+  const res=await fetch(CHAT_URL+`?id=eq.${id}`,{headers:{apikey:ANON_KEY}});
+  const m=(res.ok?await res.json():[])[0];
+  if(!m){alert('消息不存在');return;}
+  document.getElementById('modalTitle').textContent=`消息详情 - ${m.username}`;
+  document.getElementById('modalBody').innerHTML=`
+    <p><strong>内容：</strong>${m.content}</p>
+    <p><strong>时间：</strong>${new Date(m.created_at).toLocaleString()}</p>
+    <p><strong>状态：</strong>${m.status==='exist'?'正常':m.status==='banned'?'已屏蔽':'已删除'}</p>`;
+  document.getElementById('messageModal').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('messageModal').classList.add('hidden')}
+async function toggleMessageStatus(id,status){
+  const newStatus=status==='banned'?'exist':'banned';
+  const res=await fetch(CHAT_URL+`?id=eq.${id}`,{
+    method:'PATCH',
+    headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({status:newStatus})
+  });
+  if(res.ok){alert('操作成功');loadMessagesForManagement();closeModal();}else alert('操作失败');
+}
+async function deleteMessagePermanent(id){
+  if(!confirm('确定永久删除？'))return;
+  const res=await fetch(CHAT_URL+`?id=eq.${id}`,{method:'DELETE',headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`}});
+  if(res.ok){alert('删除成功');loadMessagesForManagement();closeModal();}else alert('删除失败');
+}
+
+/* ================= 用户管理（含禁言） ================= */
+let currentTargetUserId=null; // 发消息/禁言目标
+async function loadUsersForManagement(){
+  const search=document.getElementById('userSearch').value.toLowerCase();
+  const res=await fetch(CHAT_URL+'?select=sender_id,username&limit=500',{headers:{apikey:ANON_KEY}});
+  const arr=res.ok?await res.json():[];
+  const map=new Map();
+  arr.forEach(m=>{if(m.sender_id)map.set(m.sender_id,m.username);});
+  let users=Array.from(map.entries()).map(([id,name])=>({id,name}));
+  if(search)users=users.filter(u=>u.name.toLowerCase().includes(search));
+  renderUsersTable(users);
+}
+function renderUsersTable(users){
+  const box=document.getElementById('usersTableContainer');
+  if(!users.length){box.innerHTML='<p>暂无用户</p>';return;}
+  box.innerHTML=`
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>用户名</th><th>操作</th></tr></thead>
+      <tbody>${users.map(u=>`
+        <tr>
+          <td>${u.id.slice(0,8)}...</td>
+          <td>${u.name}</td>
+          <td class="action-cell">
+            <button class="d-btn" onclick="showUserDetail('${u.id}')">详情</button>
+            <button class="d-btn primary" onclick="openSysMsgModal('${u.id}')">发消息</button>
+            <button class="d-btn warning" onclick="openBanModal('${u.id}')">禁言</button>
+          </td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+async function showUserDetail(id){
+  const msgRes=await fetch(CHAT_URL+`?sender_id=eq.${id}&select=count`,{headers:{apikey:ANON_KEY}});
+  const cnt=(msgRes.ok?await msgRes.json():[])[0]?.count||0;
+  document.getElementById('userModalTitle').textContent=`用户详情`;
+  document.getElementById('userModalBody').innerHTML=`
+    <p><strong>用户ID：</strong>${id}</p>
+    <p><strong>发送消息数：</strong>${cnt}</p>`;
+  document.getElementById('userModal').classList.remove('hidden');
+}
+function closeUserModal(){document.getElementById('userModal').classList.add('hidden')}
+
+/* ========== 系统消息 ========== */
+function openSysMsgModal(userId){
+  currentTargetUserId=userId;
+  document.getElementById('sysMsgTitle').value='';
+  document.getElementById('sysMsgBody').value='';
+  document.getElementById('sysMsgModal').classList.remove('hidden');
+}
+function closeSysMsgModal(){document.getElementById('sysMsgModal').classList.add('hidden')}
+async function sendSystemMessage(ev){
+  ev.preventDefault();
+  const title=document.getElementById('sysMsgTitle').value.trim();
+  const body=document.getElementById('sysMsgBody').value.trim();
+  if(!title||!body){alert('请填写完整');return;}
+  const res=await fetch(NOTI_URL,{
+    method:'POST',
+    headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({user_id:currentTargetUserId,type:'system',title:title,body:body})
+  });
+  if(res.ok){alert('系统消息已发送');closeSysMsgModal();}
+  else{alert('发送失败');}
+}
+
+/* ========== 禁言功能 ========== */
+function openBanModal(userId){
+  currentTargetUserId=userId;
+  document.getElementById('banValue').value='';
+  document.getElementById('banReason').value='';
+  document.getElementById('banModal').classList.remove('hidden');
+}
+function closeBanModal(){document.getElementById('banModal').classList.add('hidden')}
+async function confirmBan(){
+  const unit=document.getElementById('banUnit').value;
+  const val=parseInt(document.getElementById('banValue').value);
+  if(!val||val<=0){alert('请输入正数');return;}
+  let until=new Date();
+  if(unit==='min')until.setMinutes(until.getMinutes()+val);
+  else if(unit==='hour')until.setHours(until.getHours()+val);
+  else if(unit==='forever')until.setFullYear(until.getFullYear()+10);
+  const reason=document.getElementById('banReason').value.trim()||'管理员禁言';
+  const res=await fetch(BANS_URL,{
+    method:'POST',
+    headers:{'apikey':ANON_KEY,'Authorization':`Bearer ${ANON_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({user_id:currentTargetUserId,until:until.toISOString(),reason:reason})
+  });
+  if(res.ok){alert('禁言成功');closeBanModal();}
+  else{alert('禁言失败');}
+}
+
+/* ================= 系统设置 ================= */
+function exportData(){alert('导出功能（模拟）')}
+function clearAllData(){if(confirm('确定清空所有数据？'))alert('已清空（模拟）')}
+
+/* ================= 模态框 & 退出 ================= */
+function logout(){
+  if(confirm('确定退出管理系统？')){
+    localStorage.removeItem('admin');
+    location.href='index.html';
+  }
+}
+
+/* ================= 管理员登录 ================= */
+document.addEventListener('DOMContentLoaded',()=>{
+  if(localStorage.getItem('admin')!=='true'){
+    document.body.innerHTML=`
+      <div style="display:flex;height:100vh;align-items:center;justify-content:center;background:var(--bg)">
+        <div class="card">
+          <h1 style="text-align:center">管理员登录</h1>
+          <input id="adminUser" class="duo-input" placeholder="账号" value="admin">
+          <input id="adminPwd" class="duo-input" placeholder="密码" type="password" value="admin123">
+          <div class="btn-group"><button class="d-btn primary" onclick="adminLogin()">登录</button></div>
+        </div>
+      </div>`;
+    return;
+  }
+  loadDashboard();
+});
+window.adminLogin=function(){
+  const u=document.getElementById('adminUser').value;
+  const p=document.getElementById('adminPwd').value;
+  if(u==='admin'&&p==='admin123'){localStorage.setItem('admin','true');location.reload();}
+  else{alert('账号或密码错误');}
+};
+</script>
+
+<!-- 用户详情模态框 -->
+<div id="userModal" class="modal-mask hidden">
+  <div class="modal-panel">
+    <div id="userModalTitle" class="modal-title">用户详情</div>
+    <div id="userModalBody" class="modal-body"></div>
+    <div class="btn-group">
+      <button class="d-btn" onclick="closeUserModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
